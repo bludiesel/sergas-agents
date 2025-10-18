@@ -1,0 +1,150 @@
+version: '3.8'
+
+services:
+  # Cognee Core Service
+  cognee:
+    image: cognee/cognee:latest
+    container_name: sergas-cognee
+    ports:
+      - "8000:8000"
+    environment:
+      - COGNEE_API_KEY=${COGNEE_API_KEY:-}
+      - COGNEE_WORKSPACE=sergas-accounts
+      - VECTOR_STORE_TYPE=lancedb
+      - VECTOR_STORE_PATH=/data/vectors
+      - GRAPH_DB_TYPE=networkx
+      - ENABLE_EMBEDDINGS=true
+      - ENABLE_SEARCH=true
+      - LOG_LEVEL=INFO
+    volumes:
+      - cognee_data:/data
+      - cognee_models:/models
+    networks:
+      - sergas_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # LanceDB Vector Store
+  lancedb:
+    image: lancedb/lancedb:latest
+    container_name: sergas-lancedb
+    ports:
+      - "8001:8001"
+    environment:
+      - LANCE_DB_PATH=/data/lancedb
+      - LANCE_DB_HOST=0.0.0.0
+      - LANCE_DB_PORT=8001
+    volumes:
+      - lancedb_data:/data/lancedb
+    networks:
+      - sergas_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Neo4j Graph Database (Optional - for production)
+  neo4j:
+    image: neo4j:5.14-community
+    container_name: sergas-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-changeme}
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=2G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_conf:/conf
+    networks:
+      - sergas_network
+    restart: unless-stopped
+    profiles:
+      - production  # Only run with: docker-compose --profile production up
+
+  # Redis Cache (for Cognee caching)
+  redis:
+    image: redis:7-alpine
+    container_name: sergas-cognee-redis
+    ports:
+      - "6380:6379"  # Using 6380 to avoid conflicts
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    networks:
+      - sergas_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy (Optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: sergas-cognee-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_ssl:/etc/nginx/ssl
+    networks:
+      - sergas_network
+    depends_on:
+      - cognee
+      - lancedb
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  cognee_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./cognee_data
+
+  lancedb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./lancedb_data
+
+  cognee_models:
+    driver: local
+
+  neo4j_data:
+    driver: local
+
+  neo4j_logs:
+    driver: local
+
+  neo4j_conf:
+    driver: local
+
+  redis_data:
+    driver: local
+
+  nginx_ssl:
+    driver: local
+
+networks:
+  sergas_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
