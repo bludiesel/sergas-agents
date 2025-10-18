@@ -8,7 +8,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 1: Environment & Infrastructure Ready
 
-**Target Date**: End of Week 3
+**Target Date**: End of Week 4
 **Phase**: Foundation
 **Owner**: Engineering Lead
 
@@ -16,8 +16,12 @@ This document defines key milestones for the Sergas Super Account Manager projec
 - [ ] Python 3.14 virtual environment configured and documented
 - [ ] Claude Agent SDK installed and basic query tested
 - [ ] Zoho MCP endpoint connected with successful authentication
+- [ ] Zoho Python SDK v8 installed and configured
+- [ ] SDK OAuth client registered with separate credentials
+- [ ] Database token persistence operational
+- [ ] ZohoIntegrationManager routing verified in tests
 - [ ] Cognee deployed with pilot data (50-100 accounts) ingested
-- [ ] Secrets manager configured with Zoho OAuth credentials
+- [ ] Secrets manager configured with Zoho OAuth credentials (both MCP and SDK)
 - [ ] All credentials stored securely, zero plaintext in codebase
 - [ ] Developer onboarding guide completed and validated
 - [ ] CI/CD pipeline created with basic linting and tests
@@ -53,7 +57,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Contingency**: Use self-client flow for development environment
 
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 3
+**Decision Gate**: End of Week 4
 
 **Go Criteria**:
 - All acceptance criteria met
@@ -74,7 +78,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 2: Multi-Agent System Operational
 
-**Target Date**: End of Week 8
+**Target Date**: End of Week 9
 **Phase**: Agent Development
 **Owner**: Engineering Lead + AI/ML Engineer
 
@@ -117,8 +121,19 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Mitigation**: Iterative prompt engineering, collect feedback early
   - **Contingency**: Add human review layer, template-based fallbacks
 
+### Acceptance Criteria
+- [ ] Orchestrator successfully schedules and executes account reviews
+- [ ] Four subagents (Zoho Scout, Memory Analyst, Recommendation Author, Compliance Reviewer) operational
+- [ ] Subagent uses MCP as primary, SDK as fallback via ZohoIntegrationManager
+- [ ] Tool permissions enforced per agent (read-only, write-gated, etc.)
+- [ ] Hooks system implemented with audit logging
+- [ ] Agent coordination via memory/hooks functional
+- [ ] End-to-end test: Orchestrator → Subagents → Result aggregation successful
+- [ ] All Zoho write operations blocked until manual approval
+- [ ] Performance: Single account review completed in <30 seconds
+
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 8
+**Decision Gate**: End of Week 9
 
 **Go Criteria**:
 - All subagents complete assigned tasks successfully
@@ -140,7 +155,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 3: Data Pipeline & Integration Complete
 
-**Target Date**: End of Week 11
+**Target Date**: End of Week 12
 **Phase**: Integration
 **Owner**: Backend Engineer + Data Engineer
 
@@ -165,7 +180,9 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - Pilot execution depends on reliable output delivery
 
 ### Success Metrics
-- Sync pipeline handles 5k accounts in <10 minutes
+- Sync pipeline handles 5k accounts in <15 minutes using SDK bulk operations
+- Cognee sync uses SDK bulk operations (100 records/call)
+- Performance validated: 5k accounts sync in <15 minutes
 - Incremental updates processed within 5 minutes
 - Owner briefs generated within 10 minutes of trigger
 - 99% sync success rate
@@ -184,7 +201,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Contingency**: Enhanced cleaning pipeline, manual data correction workflow
 
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 11
+**Decision Gate**: End of Week 12
 
 **Go Criteria**:
 - All acceptance criteria met
@@ -206,7 +223,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 4: Pilot Validated & User Feedback Positive
 
-**Target Date**: End of Week 14
+**Target Date**: End of Week 15
 **Phase**: Testing & Validation
 **Owner**: Product Manager + Engineering Lead
 
@@ -252,7 +269,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Contingency**: Delay production rollout, engage external security experts
 
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 14
+**Decision Gate**: End of Week 15
 
 **Go Criteria**:
 - Pilot metrics meet or exceed targets
@@ -276,7 +293,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 5: Production-Ready System Deployed
 
-**Target Date**: End of Week 17
+**Target Date**: End of Week 18
 **Phase**: Production Hardening
 **Owner**: Engineering Lead + DevOps
 
@@ -322,7 +339,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Contingency**: Extended shadow support from dev team
 
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 17
+**Decision Gate**: End of Week 18
 
 **Go Criteria**:
 - All acceptance criteria met
@@ -346,7 +363,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
 
 ## Milestone 6: Full Team Adoption Achieved
 
-**Target Date**: End of Week 20
+**Target Date**: End of Week 21
 **Phase**: Deployment & Rollout
 **Owner**: Product Manager + Customer Success
 
@@ -392,7 +409,7 @@ This document defines key milestones for the Sergas Super Account Manager projec
   - **Contingency**: Feature simplification, UX improvements, extended support
 
 ### Go/No-Go Decision Point
-**Decision Gate**: End of Week 20
+**Decision Gate**: End of Week 21
 
 **Go Criteria**:
 - Adoption targets met (80%+ usage)

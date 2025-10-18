@@ -650,6 +650,22 @@ A multi-agent AI system that:
 - Token usage reports reviewed
 - Storage growth tracked
 
+#### NFR-4.3.4: Bulk Operation Performance
+**Priority**: High
+**Description**: Bulk operations SHALL utilize Zoho Python SDK for optimal performance
+
+**Requirements:**
+- Bulk read operations: 100 records per API call (vs. individual REST calls)
+- Cognee nightly sync: 5,000 accounts in <15 minutes
+- Background reconciliation: Process 1,000 records in <5 minutes
+- Parallel operation support for multiple bulk operations
+
+**Validation:**
+- Performance benchmarks meet targets
+- SDK bulk operations verified at 100 records/call
+- Nightly sync duration monitored
+- Parallel execution efficiency measured
+
 ### 4.4 Reliability Requirements
 
 #### NFR-4.4.1: System Uptime
@@ -1412,7 +1428,38 @@ A multi-agent AI system that:
 
 ---
 
-### 8.2 Cognee Memory Integration
+#### 8.2 Zoho Python SDK Integration
+
+**FR-8.2.1**: System SHALL integrate official Zoho Python SDK v8 (`zohocrmsdk8-0`) as secondary integration tier for bulk operations and background jobs.
+
+**FR-8.2.2**: SDK client SHALL implement database-backed token persistence with automatic refresh.
+
+**FR-8.2.3**: ZohoIntegrationManager SHALL route operations to optimal tier:
+- Agent-driven operations → Zoho MCP (primary)
+- Bulk operations (>50 records) → Zoho Python SDK (secondary)
+- Fallback → REST API (tertiary)
+
+**FR-8.2.4**: SDK SHALL be used for:
+- Nightly Cognee sync (5,000 accounts bulk ingestion)
+- File upload/download operations
+- Custom module access not available via MCP
+- Background data reconciliation jobs
+
+**FR-8.2.5**: System SHALL maintain separate OAuth clients for MCP and SDK integrations.
+
+**Acceptance Criteria**:
+- Zoho Python SDK v8 installed and configured
+- Database token persistence operational
+- ZohoIntegrationManager routing verified in tests
+- Bulk operations use SDK (100 records/call)
+- Separate OAuth credentials for MCP and SDK
+- Token refresh automation functional
+
+**Phase**: Foundation (Week 2-4)
+
+---
+
+### 8.3 Cognee Memory Integration
 
 #### IR-8.2.1: Cognee MCP Server Setup
 **Priority**: High

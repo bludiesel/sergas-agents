@@ -125,6 +125,7 @@ dependencies = [
     "cognee>=0.1.0",
 
     # Zoho Integrations
+    "zohocrmsdk8-0>=2.0.0",  # Official Zoho Python SDK for API v8
     "zoho-crm-python>=1.0.0",
     "zoho-books-python>=1.0.0",
     "requests>=2.31.0",
@@ -458,6 +459,191 @@ class AccountAgent(BaseAgent):
             "analysis": "".join(results),
             "session_id": self.session_id,
         }
+```
+
+### 5.3 Zoho Integration Manager Pattern
+
+The `ZohoIntegrationManager` class provides intelligent routing across three integration tiers:
+
+```python
+from enum import Enum
+from typing import Dict, Any, List, Optional
+import structlog
+from zohocrmsdk.src.com.zoho.crm.api import Initializer
+from zohocrmsdk.src.com.zoho.crm.api.record import RecordOperations
+from zohocrmsdk.src.com.zoho.api.authenticator.store import DBStore
+
+logger = structlog.get_logger()
+
+class ZohoIntegrationTier(str, Enum):
+    """Integration tier selection."""
+    MCP = "mcp"     # Primary: Agent operations
+    SDK = "sdk"      # Secondary: Bulk operations
+    REST = "rest"    # Tertiary: Fallback
+
+class ZohoIntegrationManager:
+    """Intelligent routing across Zoho integration tiers."""
+
+    def __init__(self, mcp_client, sdk_config: Dict[str, Any], rest_client):
+        self.mcp_client = mcp_client
+        self.rest_client = rest_client
+
+        # Initialize Zoho SDK with database token persistence
+        store = DBStore(
+            host=sdk_config["db_host"],
+            database_name=sdk_config["db_name"],
+            user_name=sdk_config["db_user"],
+            password=sdk_config["db_password"],
+            port_number=sdk_config["db_port"]
+        )
+
+        Initializer.initialize(
+            environment=sdk_config["environment"],
+            token=sdk_config["token"],
+            store=store,
+            sdk_config=sdk_config["sdk_config"]
+        )
+
+        self.sdk_operations = RecordOperations()
+        self.mcp_available = True
+        self.sdk_available = True
+
+    async def get_accounts(
+        self,
+        filters: Optional[Dict[str, Any]] = None,
+        limit: int = 100,
+        context: str = "agent"  # "agent", "bulk", "background"
+    ) -> List[Dict[str, Any]]:
+        """Route account retrieval to optimal tier."""
+
+        tier = self._select_tier(
+            operation="read",
+            record_count=limit,
+            context=context
+        )
+
+        logger.info("zoho_operation_routed", tier=tier, limit=limit, context=context)
+
+        try:
+            if tier == ZohoIntegrationTier.MCP:
+                return await self._get_via_mcp(filters, limit)
+            elif tier == ZohoIntegrationTier.SDK:
+                return await self._get_via_sdk(filters, limit)
+            else:
+                return await self._get_via_rest(filters, limit)
+        except Exception as e:
+            logger.warning("tier_failed_cascading", tier=tier, error=str(e))
+            return await self._cascade_fallback(filters, limit, failed_tier=tier)
+
+    def _select_tier(
+        self,
+        operation: str,
+        record_count: int,
+        context: str
+    ) -> ZohoIntegrationTier:
+        """Determine optimal integration tier."""
+
+        # Agent-driven operations prefer MCP for audit hooks
+        if context == "agent" and record_count <= 50:
+            if self.mcp_available:
+                return ZohoIntegrationTier.MCP
+
+        # Bulk operations (>50 records) use SDK for performance
+        if record_count > 50 or context == "bulk":
+            if self.sdk_available:
+                return ZohoIntegrationTier.SDK
+
+        # Background jobs prefer SDK
+        if context == "background":
+            if self.sdk_available:
+                return ZohoIntegrationTier.SDK
+
+        # Fallback cascade
+        if self.mcp_available:
+            return ZohoIntegrationTier.MCP
+        elif self.sdk_available:
+            return ZohoIntegrationTier.SDK
+        else:
+            return ZohoIntegrationTier.REST
+
+    async def _get_via_mcp(self, filters, limit) -> List[Dict[str, Any]]:
+        """Retrieve via Zoho MCP (Tier 1)."""
+        response = await self.mcp_client.call_tool(
+            "zoho_query_accounts",
+            {"filters": filters, "limit": limit}
+        )
+        return response.get("accounts", [])
+
+    async def _get_via_sdk(self, filters, limit) -> List[Dict[str, Any]]:
+        """Retrieve via Zoho Python SDK (Tier 2) - 100 records/call."""
+        # SDK supports bulk operations with automatic pagination
+        response = self.sdk_operations.get_records("Accounts", per_page=min(limit, 100))
+        accounts = []
+        for record in response.get_data():
+            accounts.append(record.get_key_values())
+        return accounts
+
+    async def _get_via_rest(self, filters, limit) -> List[Dict[str, Any]]:
+        """Retrieve via REST API (Tier 3 fallback)."""
+        return await self.rest_client.get_accounts(filters, limit)
+
+    async def _cascade_fallback(
+        self,
+        filters,
+        limit,
+        failed_tier: ZohoIntegrationTier
+    ) -> List[Dict[str, Any]]:
+        """Cascade to next available tier on failure."""
+        if failed_tier == ZohoIntegrationTier.MCP:
+            if self.sdk_available:
+                return await self._get_via_sdk(filters, limit)
+            else:
+                return await self._get_via_rest(filters, limit)
+        elif failed_tier == ZohoIntegrationTier.SDK:
+            return await self._get_via_rest(filters, limit)
+        else:
+            raise Exception("All Zoho integration tiers unavailable")
+```
+
+**Usage Example:**
+
+```python
+# Initialize integration manager
+integration_manager = ZohoIntegrationManager(
+    mcp_client=mcp_client,
+    sdk_config={
+        "environment": "production",
+        "token": token,
+        "db_host": "localhost",
+        "db_name": "zoho_tokens",
+        "db_user": "admin",
+        "db_password": "***",
+        "db_port": 5432,
+        "sdk_config": sdk_config
+    },
+    rest_client=rest_client
+)
+
+# Agent operations use MCP (primary)
+accounts = await integration_manager.get_accounts(
+    filters={"status": "active"},
+    limit=20,
+    context="agent"
+)
+
+# Bulk operations use SDK (secondary)
+bulk_accounts = await integration_manager.get_accounts(
+    filters={"modified_since": "2025-01-01"},
+    limit=5000,
+    context="bulk"
+)
+
+# Background jobs use SDK (secondary)
+sync_accounts = await integration_manager.get_accounts(
+    filters=None,
+    limit=5000,
+    context="background"
+)
 ```
 
 ## 6. Hook Implementation Strategies
@@ -1323,35 +1509,39 @@ python src/main.py
 
 ## 15. Next Steps and Timeline
 
-### Phase 1: Foundation (Week 1-2)
+### Phase 1: Foundation (Week 1-4)
 - [ ] Setup project structure
 - [ ] Configure dependencies and environment
+- [ ] Install and configure Zoho Python SDK v8
+- [ ] Implement database token persistence for SDK
+- [ ] Implement ZohoIntegrationManager with routing logic
 - [ ] Implement base agent class
 - [ ] Setup logging and error handling
 - [ ] Create initial tests
 
-### Phase 2: Core Agents (Week 3-4)
+### Phase 2: Core Agents (Week 5-6)
 - [ ] Implement AccountAgent
 - [ ] Implement RecommendationAgent
 - [ ] Implement AuditAgent
 - [ ] Create MCP tools for Zoho and Cognee
 - [ ] Implement hooks framework
 
-### Phase 3: Integration (Week 5-6)
-- [ ] Integrate with Zoho APIs
+### Phase 3: Integration (Week 7-8)
+- [ ] Migrate Cognee nightly sync to use SDK bulk operations (performance optimization)
+- [ ] Implement file upload/download using SDK
 - [ ] Integrate with Cognee
 - [ ] Implement coordinator agent
 - [ ] Create integration tests
 - [ ] Setup CI/CD pipeline
 
-### Phase 4: Testing & Refinement (Week 7-8)
+### Phase 4: Testing & Refinement (Week 9-10)
 - [ ] Comprehensive testing (unit, integration, e2e)
 - [ ] Performance optimization
 - [ ] Security audit
 - [ ] Documentation completion
 - [ ] User acceptance testing
 
-### Phase 5: Deployment (Week 9-10)
+### Phase 5: Deployment (Week 11-12)
 - [ ] Staging deployment
 - [ ] Production deployment
 - [ ] Monitoring setup

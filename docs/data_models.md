@@ -766,6 +766,48 @@ class AgentMemory(SerGasBaseModel):
     )
 ```
 
+## 6. Zoho Integration Models
+
+```python
+class ZohoIntegrationTier(str, Enum):
+    """Integration tier selection."""
+    MCP = "mcp"           # Primary: Agent operations
+    SDK = "sdk"           # Secondary: Bulk operations
+    REST = "rest"         # Tertiary: Fallback
+
+class ZohoSDKConfig(BaseModel):
+    """Configuration for Zoho Python SDK client."""
+    client_id: str
+    client_secret: SecretStr
+    refresh_token: SecretStr
+    redirect_url: str
+    environment: str = "production"  # production, sandbox, developer
+    region: str = "us"  # us, eu, au, in, cn, jp
+    db_host: str
+    db_name: str
+    db_user: str
+    db_password: SecretStr
+    db_port: int = 5432
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "client_id": "1000.ABC123XYZ",
+                "client_secret": "***",
+                "refresh_token": "1000.def456.ghi789",
+                "redirect_url": "https://localhost:8000/callback",
+                "environment": "production",
+                "region": "us",
+                "db_host": "localhost",
+                "db_name": "zoho_tokens",
+                "db_user": "admin",
+                "db_password": "***",
+                "db_port": 5432
+            }
+        }
+    )
+```
+
 ## 7. Configuration Models
 
 ### 7.1 Agent Configuration Model

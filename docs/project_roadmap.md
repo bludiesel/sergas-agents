@@ -4,13 +4,13 @@
 
 This roadmap outlines the development journey for the Sergas Super Account Manager, a multi-agent system powered by Claude Agent SDK (Python 3.14) that automates account monitoring, synthesizes historical context, and generates actionable recommendations for account executives. The system integrates Zoho CRM via MCP servers and leverages Cognee for persistent memory.
 
-**Target Timeline**: 16-20 weeks (4-5 months)
+**Target Timeline**: 17-21 weeks (4.5-5 months)
 **Core Technology**: Claude Agent SDK (Python), Zoho MCP, Cognee, Claude-Flow orchestration
 **Success Metrics**: 60% reduction in manual CRM audit time, 80% rep adoption, 50% recommendation uptake
 
 ---
 
-## Phase 1: Foundation (Weeks 1-3)
+## Phase 1: Foundation (Weeks 1-4)
 
 ### Objectives
 - Establish development environment and core infrastructure
@@ -57,6 +57,32 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Implement token rotation strategy
   - Define API access control policies
 
+#### 1.2.5 Zoho Python SDK Integration (Week 2-3)
+- **SDK Installation and Configuration**
+  - Install Zoho Python SDK v8 (`zohocrmsdk8-0`)
+  - Register separate OAuth client for SDK (distinct from MCP client)
+  - Configure database-backed token persistence (PostgreSQL table)
+  - Test automatic token refresh functionality
+
+- **SDK Client Wrapper Development**
+  - Create SDK client wrapper with initialization logic
+  - Implement database token store configuration
+  - Build error handling and retry logic
+  - Test bulk read/write operations (100 records/call)
+
+- **ZohoIntegrationManager Implementation**
+  - Build three-tier routing logic (MCP → SDK → REST)
+  - Implement tier selection criteria (operation type, record count, context)
+  - Add circuit breaker pattern for tier failures
+  - Create cascade fallback logic
+  - Write tests for routing scenarios
+
+- **Configuration Files**
+  - Create SDK configuration file (`config/zoho_sdk.yaml`)
+  - Document SDK usage patterns
+  - Define environment-specific settings
+  - Set up integration manager instantiation
+
 #### 1.3 Cognee Deployment (Week 2-3)
 - **Infrastructure Setup**
   - Deploy Cognee (self-hosted or managed)
@@ -92,19 +118,25 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 ### Deliverables
 - ✅ Working Python 3.14 environment with Claude Agent SDK
 - ✅ Validated Zoho MCP connection with documented tools
+- ✅ Zoho SDK client wrapper (`src/integrations/zoho/sdk_client.py`)
+- ✅ Integration manager (`src/integrations/zoho/integration_manager.py`)
+- ✅ SDK configuration file (`config/zoho_sdk.yaml`)
 - ✅ Operational Cognee instance with pilot data ingested
-- ✅ Secrets manager configured with OAuth credentials
+- ✅ Secrets manager configured with OAuth credentials (both MCP and SDK)
 - ✅ Foundation documentation (architecture, security, developer guide)
 
 ### Success Criteria
 - Successfully authenticate to Zoho MCP and execute read operations
+- SDK OAuth client registered with separate credentials
+- Database token persistence operational
+- ZohoIntegrationManager routing verified in tests
 - Retrieve relevant account context from Cognee with <2s latency
 - All secrets stored in vault, zero plaintext credentials in code
 - Developer onboarding completed in <4 hours
 
 ---
 
-## Phase 2: Agent Development (Weeks 4-8)
+## Phase 2: Agent Development (Weeks 5-9)
 
 ### Objectives
 - Implement orchestrator with scheduling and session management
@@ -114,7 +146,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ### Key Activities
 
-#### 2.1 Orchestrator Development (Week 4-5)
+#### 2.1 Orchestrator Development (Week 5-6)
 - **Core Orchestrator Client**
   - Implement `ClaudeSDKClient` for stateful sessions
   - Build account review scheduling (daily/weekly/on-demand)
@@ -133,10 +165,11 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Implement task orchestration patterns
   - Set up performance monitoring
 
-#### 2.2 Subagent Implementation (Week 5-7)
+#### 2.2 Subagent Implementation (Week 6-8)
 - **Zoho Data Scout Agent**
   - Define agent prompt and system instructions
   - Configure tool allowlist: `Read`, `WebFetch`, Zoho MCP (read-only)
+  - Subagent uses MCP as primary, SDK as fallback via ZohoIntegrationManager
   - Implement account change detection logic
   - Build stale deal and inactivity detection
   - Add owner metadata enrichment
@@ -161,7 +194,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Add policy rule validation
   - Build compliance scoring
 
-#### 2.3 Hook System Development (Week 7-8)
+#### 2.3 Hook System Development (Week 9-9)
 - **Pre-Operation Hooks**
   - `pre-task`: Initialize agent context, log task start
   - `pre-tool`: Intercept Zoho write operations, require approval
@@ -185,7 +218,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Add timeout and escalation logic
   - Create approval audit trail
 
-#### 2.4 Agent Coordination Protocol (Week 8)
+#### 2.4 Agent Coordination Protocol (Week 9)
 - **Memory-Based Coordination**
   - Define shared memory schema for agent communication
   - Implement status broadcasting via memory store
@@ -212,7 +245,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ---
 
-## Phase 3: Integration & Data Pipeline (Weeks 9-11)
+## Phase 3: Integration & Data Pipeline (Weeks 10-12)
 
 ### Objectives
 - Build robust Zoho-to-Cognee sync pipeline
@@ -222,7 +255,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ### Key Activities
 
-#### 3.1 Data Synchronization Pipeline (Week 9-10)
+#### 3.1 Data Synchronization Pipeline (Week 12-11)
 - **Bulk Initial Sync**
   - Implement Zoho Bulk Read API integration
   - Build data normalization layer
@@ -243,7 +276,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Build anomaly detection
   - Create data quality dashboards
 
-#### 3.2 Supplemental REST/SDK Layer (Week 10)
+#### 3.2 Supplemental REST/SDK Layer (Week 12)
 - **Gap Operations Service**
   - Build FastAPI wrapper for Zoho REST API
   - Implement operations not in MCP (bulk operations, custom modules)
@@ -256,7 +289,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Build performance indicators
   - Add trend analysis endpoints
 
-#### 3.3 Output Generation System (Week 11)
+#### 3.3 Output Generation System (Week 12)
 - **Brief Generation**
   - Implement per-owner account brief aggregation
   - Build priority ranking algorithms
@@ -275,7 +308,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Add notification channel integration
   - Implement delivery scheduling
 
-#### 3.4 Monitoring & Observability (Week 11)
+#### 3.4 Monitoring & Observability (Week 12)
 - **Logging Infrastructure**
   - Set up centralized logging (ELK, Datadog, etc.)
   - Implement structured logging
@@ -295,20 +328,22 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Build cost analysis reports
 
 ### Deliverables
-- ✅ Automated Zoho-to-Cognee sync pipeline
-- ✅ Supplemental REST layer for MCP gaps
+- ✅ Automated Zoho-to-Cognee sync pipeline (using SDK for bulk operations)
+- ✅ SDK-powered bulk operations (100 records/call)
+- ✅ Supplemental REST layer for final fallback
 - ✅ Owner brief generation and delivery system
 - ✅ Comprehensive monitoring and alerting
 
 ### Success Criteria
-- Sync pipeline handles 5k accounts with <10 min total time
+- Sync pipeline handles 5k accounts in <15 minutes using SDK bulk operations
+- Cognee sync uses SDK bulk operations (100 records per API call)
 - Incremental updates processed within 5 minutes of Zoho changes
 - Owner briefs generated within 10 minutes of scheduled run
 - 99% successful sync rate with automated recovery
 
 ---
 
-## Phase 4: Testing & Validation (Weeks 12-14)
+## Phase 4: Testing & Validation (Weeks 13-15)
 
 ### Objectives
 - Execute pilot with limited account set
@@ -331,7 +366,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Build feedback capture UI (CLI/Slack/web form)
   - Prepare rollback procedures
 
-#### 4.2 Pilot Execution (Week 12-13)
+#### 4.2 Pilot Execution (Week 14-15)
 - **Initial Run**
   - Execute first account review cycle
   - Monitor system performance
@@ -350,7 +385,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Validate supporting data references
   - Assess actionability of suggestions
 
-#### 4.3 Iteration & Refinement (Week 13-14)
+#### 4.3 Iteration & Refinement (Week 14-15)
 - **Prompt Engineering**
   - Refine agent prompts based on output quality
   - Adjust recommendation templates
@@ -402,7 +437,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ---
 
-## Phase 5: Production Hardening (Weeks 15-17)
+## Phase 5: Production Hardening (Weeks 16-18)
 
 ### Objectives
 - Implement production-grade reliability and resilience
@@ -412,7 +447,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ### Key Activities
 
-#### 5.1 Reliability Engineering (Week 15-16)
+#### 5.1 Reliability Engineering (Week 19-17)
 - **Retry & Backoff Strategies**
   - Implement exponential backoff for API failures
   - Add circuit breakers for external services
@@ -431,7 +466,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Build partial result handling
   - Add manual intervention triggers
 
-#### 5.2 Scalability Improvements (Week 16)
+#### 5.2 Scalability Improvements (Week 19)
 - **Performance Optimization**
   - Optimize database queries
   - Implement connection pooling
@@ -450,7 +485,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Validate rate limit handling
   - Measure degradation points
 
-#### 5.3 Operational Excellence (Week 16-17)
+#### 5.3 Operational Excellence (Week 19-17)
 - **Runbooks & Procedures**
   - Document deployment procedures
   - Create incident response runbooks
@@ -469,7 +504,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Add capacity alerts (rate limits, quota warnings)
   - Define on-call rotation and escalation
 
-#### 5.4 User Training & Documentation (Week 17)
+#### 5.4 User Training & Documentation (Week 19)
 - **User Documentation**
   - Create user guide
   - Build video tutorials
@@ -502,7 +537,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ---
 
-## Phase 6: Deployment & Rollout (Weeks 18-20)
+## Phase 6: Deployment & Rollout (Weeks 19-21)
 
 ### Objectives
 - Execute phased production rollout
@@ -512,7 +547,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
 
 ### Key Activities
 
-#### 6.1 Production Deployment (Week 18)
+#### 6.1 Production Deployment (Week 19)
 - **Infrastructure Provisioning**
   - Provision production environments
   - Configure production secrets and credentials
@@ -531,7 +566,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Enable production traffic
   - Monitor initial performance
 
-#### 6.2 Phased Rollout (Week 18-19)
+#### 6.2 Phased Rollout (Week 19-19)
 - **Phase 1: Early Adopters (10% of users)**
   - Enable for pilot volunteers
   - Monitor closely for issues
@@ -550,7 +585,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Provide active support
   - Celebrate milestones
 
-#### 6.3 Adoption Support (Week 19-20)
+#### 6.3 Adoption Support (Week 21-21)
 - **User Onboarding**
   - Scheduled training sessions
   - 1-on-1 support for champions
@@ -569,7 +604,7 @@ This roadmap outlines the development journey for the Sergas Super Account Manag
   - Measure recommendation uptake
   - Calculate ROI
 
-#### 6.4 Optimization & Iteration (Week 20)
+#### 6.4 Optimization & Iteration (Week 21)
 - **Performance Tuning**
   - Optimize based on production patterns
   - Adjust caching strategies

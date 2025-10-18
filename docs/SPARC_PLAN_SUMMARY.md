@@ -3,7 +3,7 @@
 **Generated**: 2025-10-18
 **Methodology**: SPARC (Specification, Pseudocode, Architecture, Refinement, Completion)
 **Coordination**: Claude Flow MCP (Hierarchical Swarm)
-**Project Timeline**: 16-20 weeks (4-5 months)
+**Project Timeline**: 17-21 weeks (4.5-5 months)
 
 ---
 
@@ -19,6 +19,18 @@ This document provides a comprehensive SPARC-based plan for building the **Serga
 - Enterprise security and compliance
 
 ---
+
+## 4. Integration Architecture
+
+**Zoho CRM Integration**: Three-tier integration strategy for optimal performance and reliability
+
+- **Tier 1 (Primary): Zoho MCP** - Agent-driven operations with audit hooks and tool permissions
+- **Tier 2 (Secondary): Zoho Python SDK v8** - Official SDK for bulk operations (100 records/call), automatic token management, COQL queries, file operations. Used as secondary tier for background jobs and performance-critical operations.
+- **Tier 3 (Tertiary): REST API** - Fallback when both MCP and SDK unavailable
+
+**ZohoIntegrationManager**: Intelligent routing based on operation type, record count, and context. Circuit breaker pattern with cascade fallback.
+
+**Cognee Memory**: Knowledge graph for persistent account context, historical analysis, and relationship tracking.
 
 ## 📁 Project Structure Created
 
@@ -197,10 +209,10 @@ sergas_agents/
 ### 8. Project Roadmap (Complete)
 **Files**: `docs/project_roadmap.md`, `docs/milestones.md`, `docs/next_steps.md`
 
-**Timeline**: 16-20 weeks (4-5 months)
+**Timeline**: 17-21 weeks (4.5-5 months)
 
 **6 Major Phases**:
-1. Foundation (Weeks 1-3): Environment, MCP, Cognee, security baseline
+1. Foundation (Weeks 1-4): Environment, MCP, Zoho Python SDK, Cognee, security baseline
 2. Agent Development (Weeks 4-8): Orchestrator, subagents, hooks
 3. Integration (Weeks 9-11): Data pipeline, REST layer, monitoring
 4. Testing & Validation (Weeks 12-14): Pilot execution, security review
@@ -267,12 +279,13 @@ sergas_agents/
 ## 🎯 Key Architectural Decisions
 
 1. **Multi-Agent Pattern**: Orchestrator + 3 specialized subagents with least-privilege tool permissions
-2. **MCP-First Integration**: Zoho CRM via official MCP, Cognee via custom MCP server
-3. **Human-in-the-Loop**: All CRM writes require approval via approval gate workflow
-4. **Security-First**: OAuth 2.0, encrypted secrets, audit logs, GDPR compliance
-5. **TDD Approach**: Tests written before implementation for quality assurance
-6. **Cognee Knowledge Graph**: Persistent memory with graph + vector hybrid storage
-7. **Observability**: Prometheus metrics, structured logging, distributed tracing
+2. **Three-Tier Integration**: MCP (primary) → Python SDK (secondary) → REST (fallback) for optimal performance and reliability
+3. **Zoho Python SDK as Secondary Tier**: Official SDK for bulk operations. Rationale: Official support, automatic token management, 100 records/call performance, essential for 5k account Cognee sync.
+4. **Human-in-the-Loop**: All CRM writes require approval via approval gate workflow
+5. **Security-First**: OAuth 2.0, encrypted secrets, audit logs, GDPR compliance
+6. **TDD Approach**: Tests written before implementation for quality assurance
+7. **Cognee Knowledge Graph**: Persistent memory with graph + vector hybrid storage
+8. **Observability**: Prometheus metrics, structured logging, distributed tracing
 
 ---
 

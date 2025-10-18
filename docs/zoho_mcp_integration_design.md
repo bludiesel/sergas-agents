@@ -1159,7 +1159,54 @@ async function checkMcpHealth(): Promise<HealthCheck> {
 
 ---
 
-## 14. References
+## 14. Architecture Overview Update: Three-Tier Integration
+
+The Zoho MCP integration serves as **Tier 1 (Primary)** for agent-driven operations. For bulk operations and background jobs, the system utilizes the official Zoho Python SDK v8 as **Tier 2 (Secondary)**, with REST API as **Tier 3 (Tertiary fallback)**.
+
+### Integration Tier Selection Criteria
+
+| Operation Type | Record Count | Context | Tier Selected | Rationale |
+|---------------|--------------|---------|---------------|-----------|
+| Agent query | <50 records | Agent | Tier 1 (MCP) | Audit hooks, tool permissions |
+| Bulk read | >50 records | Bulk | Tier 2 (SDK) | 100 records/call performance |
+| Nightly sync | 5,000 records | Background | Tier 2 (SDK) | Automatic token mgmt, efficiency |
+| File operations | Any | Any | Tier 2 (SDK) | SDK specialized functionality |
+| Fallback | Any | Any | Tier 3 (REST) | When MCP and SDK unavailable |
+
+### ZohoIntegrationManager Coordination
+
+The `ZohoIntegrationManager` class implements intelligent routing:
+
+```python
+class ZohoIntegrationManager:
+    """Routes operations across MCP, SDK, and REST tiers."""
+
+    def _select_tier(self, operation: str, record_count: int, context: str):
+        # Agent operations prefer MCP for audit hooks
+        if context == "agent" and record_count <= 50:
+            if self.mcp_available:
+                return ZohoIntegrationTier.MCP
+
+        # Bulk operations use SDK for performance
+        if record_count > 50 or context == "bulk" or context == "background":
+            if self.sdk_available:
+                return ZohoIntegrationTier.SDK
+
+        # Cascade fallback
+        return self._cascade_fallback()
+```
+
+### Key Benefits of Three-Tier Strategy
+
+1. **Performance**: SDK bulk operations (100 records/call) vs. individual REST calls
+2. **Reliability**: Circuit breaker pattern with automatic fallback
+3. **Flexibility**: Optimal tier selection based on operation characteristics
+4. **Audit Compliance**: MCP tier maintains full audit trail for agent operations
+5. **Automatic Token Management**: SDK handles OAuth refresh without manual intervention
+
+See `docs/zoho_python_sdk_analysis.md` for complete SDK integration details and architecture.
+
+## 15. References
 
 - Zoho CRM API v6 Documentation: https://www.zoho.com/crm/developer/docs/api/v6/
 - Zoho OAuth 2.0 Guide: https://www.zoho.com/crm/developer/docs/api/v6/oauth-overview.html
