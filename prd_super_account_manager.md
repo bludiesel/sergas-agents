@@ -40,7 +40,8 @@
 
 #### 5.3 Integrations
 - **Zoho CRM (Phase 1)**: use the provisioned Zoho MCP endpoint via Claude (`npx mcp-remote https://zoho-mcp2-900114980...`), catalog available tools, and gate write operations through approval hooks.
-- **Zoho CRM (Phase 2)**: build supplemental REST/SDK services for operations not exposed by the MCP (bulk read/write, custom modules, analytics feeds).
+- **Zoho Python SDK (Phase 1.5)**: Official `zohocrmsdk8-0` package for bulk operations, background jobs, and operations not exposed by MCP. Provides automatic OAuth token management, bulk read/write (100 records/call), COQL queries, and file operations.
+- **Zoho CRM (Phase 2)**: Use Python SDK as secondary tier for supplemental operations (bulk read/write, custom modules, analytics feeds). REST API serves as tertiary fallback when both MCP and SDK unavailable.
 - **Memory Layer**: Cognee MCP server (or equivalent) for persistent account context.
 - Optional connectors (future): email/calendar APIs, BI dashboards.
 
@@ -57,12 +58,14 @@
 - **Observability**: Metrics for run success, API latency, token usage; error reporting with actionable logs.
 
 ### 7. Implementation Milestones
-1. **Foundation**
+1. **Foundation (4 weeks instead of 3)**
    - Set up Python 3.14 environment; install Claude Agent SDK.
    - Register existing Zoho MCP endpoint in Claude config; enumerate tools and validate required scopes.
+   - Install and configure Zoho Python SDK v8 with database token persistence.
    - Deploy Cognee sandbox; ingest pilot dataset.
 2. **Agent Orchestration**
    - Implement orchestrator client with scheduling hooks and logging.
+   - Implement ZohoIntegrationManager with three-tier routing (MCP → SDK → REST).
    - Define subagent prompts/config (Data Scout, Memory Analyst, Recommendation Author); enforce tool permissions.
    - Build hooks for audit logging and approval gating.
 3. **Pilot Experience**
@@ -71,7 +74,7 @@
    - Iterate prompts and scoring heuristics based on pilot feedback.
 4. **Production Hardening**
    - Integrate secrets manager; add monitoring & alerting.
-   - Implement retry/backoff, fallback flows when memory or MCP unavailable; introduce REST/SDK service for gap operations.
+   - Implement retry/backoff, fallback flows when memory or MCP unavailable.
    - Conduct security/privacy review; finalize compliance documentation.
 
 ### 8. Risks & Mitigations
@@ -82,6 +85,7 @@
 
 ### 9. Dependencies & Open Questions
 - Availability of Zoho sandbox and OAuth client registration.
+- Zoho Python SDK v8 (zohocrmsdk8-0) installation and OAuth client registration.
 - Confirmation on Cognee hosting preference (self-hosted vs. managed) and infrastructure ownership.
 - Clarify required modules beyond standard Accounts/Deals (custom fields, support tickets, finance data).
 - Define approval UX (existing tool vs. new interface) and notification channels for owners.
