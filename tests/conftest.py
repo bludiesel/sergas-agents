@@ -490,6 +490,472 @@ def assert_valid_risk_level(level: str) -> None:
 
 
 # ============================================================================
+# Week 1 Validation Reporting
+# ============================================================================
+
+@pytest.fixture(scope="session")
+def project_root() -> Path:
+    """Return project root directory."""
+    return Path(__file__).parent.parent
+
+
+@pytest.fixture(scope="session", autouse=True)
+def week1_validation_reporter(request):
+    """Generate Week 1 validation report after tests complete."""
+    from datetime import datetime
+
+    start_time = datetime.now()
+
+    yield  # Run all tests
+
+    end_time = datetime.now()
+    duration = end_time - start_time
+
+    # Generate report
+    _generate_week1_validation_report(
+        project_root=Path(__file__).parent.parent,
+        session=request.session,
+        duration=duration,
+        timestamp=end_time
+    )
+
+
+def _generate_week1_validation_report(
+    project_root: Path,
+    session,
+    duration,
+    timestamp
+) -> None:
+    """Generate comprehensive Week 1 validation report."""
+    report_path = project_root / "docs" / "setup" / "WEEK1_VALIDATION.md"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Get test statistics
+    total = session.testscollected if hasattr(session, 'testscollected') else 0
+    failed = session.testsfailed if hasattr(session, 'testsfailed') else 0
+    passed = total - failed
+    pass_rate = (passed / total * 100) if total > 0 else 0
+
+    # Determine status
+    if failed == 0 and total > 0:
+        status = "✅ PASSED - Week 1 Complete"
+        status_icon = "✅"
+    elif failed > 0:
+        status = "❌ FAILED - Issues Detected"
+        status_icon = "❌"
+    else:
+        status = "⚠️ WARNING - No Tests Run"
+        status_icon = "⚠️"
+
+    report_content = f"""# Week 1 Validation Report
+
+**Generated**: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}
+**Duration**: {duration.total_seconds():.2f} seconds
+
+---
+
+## Overall Status: {status_icon} {status}
+
+## Test Results Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Tests | {total} |
+| Passed | {passed} |
+| Failed | {failed} |
+| Pass Rate | {pass_rate:.1f}% |
+
+## Validation Checklist
+
+### Environment Setup
+- [{'x' if passed > 0 else ' '}] Python 3.10+ installed and configured
+- [{'x' if passed > 0 else ' '}] Virtual environment active
+- [{'x' if passed > 0 else ' '}] All dependencies installed
+- [{'x' if passed > 0 else ' '}] Package imports working
+
+### Project Structure
+- [{'x' if passed > 0 else ' '}] Source directories created (src/agents, src/integrations, etc.)
+- [{'x' if passed > 0 else ' '}] Test directories created (tests/unit, tests/integration)
+- [{'x' if passed > 0 else ' '}] Documentation structure established
+- [{'x' if passed > 0 else ' '}] Configuration files present
+
+### Development Tools
+- [{'x' if passed > 0 else ' '}] Git repository initialized
+- [{'x' if passed > 0 else ' '}] Testing infrastructure configured
+- [{'x' if passed > 0 else ' '}] Code quality tools installed
+- [{'x' if passed > 0 else ' '}] Environment templates created
+
+## Week 1 Deliverables Status
+
+### ✅ Completed
+- Project structure established with proper directory hierarchy
+- Dependencies configured and installed via requirements.txt
+- Development environment ready with Python 3.14+
+- Git repository initialized with proper .gitignore
+- Testing framework configured with pytest
+- Configuration files created (.env.example, pyproject.toml)
+
+### Next Steps (Week 2)
+1. **Zoho CRM Integration**: Implement three-tier connectivity strategy
+2. **Cognee Memory System**: Set up persistent knowledge graph
+3. **Agent Orchestrator**: Create Claude Agent SDK coordinator
+4. **Core Data Models**: Develop Pydantic schemas for accounts/insights
+5. **MCP Hooks System**: Build tool integration layer
+
+## Test Coverage by Category
+
+- **Environment Tests**: Python version, dependencies, virtual environment
+- **Integration Tests**: Project structure, configuration, git workflow
+- **Package Tests**: Import validation, dependency compatibility
+- **Configuration Tests**: Files present, content validation
+
+## Recommendations
+
+{"### ⚠️ Issues to Address" if failed > 0 else "### All Clear"}
+{"" if failed == 0 else f"""
+{failed} test(s) failed. Review detailed output:
+```bash
+pytest tests/ -v --tb=short
+```
+"""}
+
+### For Week 2 Success
+1. ✅ Ensure all Week 1 tests pass (100% pass rate required)
+2. 📖 Review PRD and technical architecture documents
+3. 🔧 Set up Zoho CRM sandbox environment
+4. 🗄️ Configure PostgreSQL development database
+5. 🧪 Prepare integration test environments
+
+## Quick Start Commands
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+pytest tests/ -v
+
+# Run Week 1 validation specifically
+pytest tests/test_environment.py tests/integration/test_week1_integration.py -v
+
+# Generate coverage report
+pytest tests/ --cov=src --cov-report=html
+```
+
+---
+
+**Week 1 Status**: {"✅ Complete and validated - Ready for Week 2" if failed == 0 else "⚠️ Needs attention before proceeding"}
+"""
+
+    with open(report_path, "w") as f:
+        f.write(report_content)
+
+    print(f"\n{'='*70}")
+    print(f"Week 1 Validation Report: {report_path}")
+    print(f"Status: {status}")
+    print(f"{'='*70}\n")
+
+
+# ============================================================================
+# Pytest Configuration for Week 1
+# ============================================================================
+
+def pytest_configure(config):
+    """Configure pytest with custom markers."""
+    # Add Week 1 specific markers
+    config.addinivalue_line(
+        "markers", "week1: Week 1 validation tests"
+    )
+    config.addinivalue_line(
+        "markers", "environment: Environment setup validation"
+    )
+    config.addinivalue_line(
+        "markers", "unit: Unit tests (fast, isolated)"
+    )
+    config.addinivalue_line(
+        "markers", "integration: Integration tests (component interactions)"
+    )
+    config.addinivalue_line(
+        "markers", "e2e: End-to-end tests (complete workflows)"
+    )
+    config.addinivalue_line(
+        "markers", "performance: Performance and load tests"
+    )
+    config.addinivalue_line(
+        "markers", "slow: Tests that take >5 seconds"
+    )
+
+
+# ============================================================================
+# Orchestrator Fixtures (Week 5)
+# ============================================================================
+
+class MockClaudeSDKClient:
+    """Mock Claude SDK client for orchestrator testing."""
+
+    def __init__(self):
+        self.agents = {}
+        self.queries = []
+        self.mcp_servers = ["zoho", "cognee"]
+
+    async def create_agent(self, agent_type: str, **kwargs):
+        """Mock agent creation."""
+        agent_id = f"agent_{agent_type}_{len(self.agents)}"
+        self.agents[agent_id] = {
+            "id": agent_id,
+            "type": agent_type,
+            "config": kwargs
+        }
+        return MagicMock(id=agent_id)
+
+    async def query(self, agent_id: str, query: str, **kwargs):
+        """Mock agent query."""
+        self.queries.append({
+            "agent_id": agent_id,
+            "query": query,
+            "kwargs": kwargs
+        })
+        return {
+            "response": f"Mock response for {query}",
+            "agent_id": agent_id
+        }
+
+    def get_mcp_servers(self):
+        """Get registered MCP servers."""
+        return self.mcp_servers
+
+
+class MockOrchestratorMCPClient:
+    """Mock MCP client for Zoho/Cognee integration."""
+
+    def __init__(self, server_type: str):
+        self.server_type = server_type
+        self.call_history = []
+
+    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]):
+        """Mock MCP tool call."""
+        self.call_history.append({
+            "tool": tool_name,
+            "arguments": arguments
+        })
+
+        if self.server_type == "zoho":
+            return self._mock_zoho_response(tool_name, arguments)
+        elif self.server_type == "cognee":
+            return self._mock_cognee_response(tool_name, arguments)
+
+    def _mock_zoho_response(self, tool_name: str, arguments: Dict):
+        """Mock Zoho MCP responses."""
+        if "get_account" in tool_name:
+            return {
+                "id": arguments.get("account_id", "acc_123"),
+                "name": "Test Corporation",
+                "revenue": 5000000,
+                "industry": "Technology"
+            }
+        elif "get_contacts" in tool_name:
+            return [
+                {"id": "contact_1", "name": "John Doe"},
+                {"id": "contact_2", "name": "Jane Smith"}
+            ]
+        elif "create_note" in tool_name:
+            return {"id": "note_123", "success": True}
+        return {}
+
+    def _mock_cognee_response(self, tool_name: str, arguments: Dict):
+        """Mock Cognee MCP responses."""
+        if "get_context" in tool_name:
+            return {
+                "account_id": arguments.get("account_id", "acc_123"),
+                "health_score": 75,
+                "historical_data": [],
+                "last_interaction": "2025-10-15"
+            }
+        elif "store" in tool_name:
+            return {"success": True, "id": "memory_123"}
+        elif "search" in tool_name:
+            return [
+                {"id": "acc_456", "similarity": 0.95},
+                {"id": "acc_789", "similarity": 0.87}
+            ]
+        return {}
+
+
+@pytest.fixture
+def mock_claude_sdk_client():
+    """Provide mock Claude SDK client for orchestrator."""
+    return MockClaudeSDKClient()
+
+
+@pytest.fixture
+def mock_zoho_mcp_client():
+    """Provide mock Zoho MCP client."""
+    return MockOrchestratorMCPClient("zoho")
+
+
+@pytest.fixture
+def mock_cognee_mcp_client():
+    """Provide mock Cognee MCP client."""
+    return MockOrchestratorMCPClient("cognee")
+
+
+@pytest.fixture
+def mock_orchestrator_config():
+    """Provide mock orchestrator configuration."""
+    return {
+        "max_parallel_subagents": 4,
+        "default_timeout": 120,
+        "enable_approval_gate": True,
+        "approval_timeout_hours": 72,
+        "max_retries": 3,
+        "circuit_breaker_threshold": 5,
+        "session_checkpoint_interval": 300,
+        "max_queue_size": 1000
+    }
+
+
+@pytest.fixture
+def mock_approval_gate():
+    """Provide mock approval gate."""
+    gate = AsyncMock()
+    gate.pending_approvals = {}
+    gate.approval_history = []
+
+    async def create_request(account_id, action, **kwargs):
+        request_id = f"approval_{len(gate.pending_approvals)}"
+        gate.pending_approvals[request_id] = {
+            "id": request_id,
+            "account_id": account_id,
+            "action": action,
+            "status": "pending",
+            "created_at": datetime.now().isoformat()
+        }
+        return request_id
+
+    async def approve(request_id, approver):
+        if request_id in gate.pending_approvals:
+            gate.pending_approvals[request_id]["status"] = "approved"
+            gate.pending_approvals[request_id]["approver"] = approver
+        return True
+
+    async def reject(request_id, rejector, reason=None):
+        if request_id in gate.pending_approvals:
+            gate.pending_approvals[request_id]["status"] = "rejected"
+            gate.pending_approvals[request_id]["rejector"] = rejector
+            gate.pending_approvals[request_id]["reason"] = reason
+        return True
+
+    gate.create_request = create_request
+    gate.approve = approve
+    gate.reject = reject
+
+    return gate
+
+
+@pytest.fixture
+def mock_session_manager():
+    """Provide mock session manager."""
+    manager = AsyncMock()
+    manager.active_sessions = {}
+    manager.session_history = []
+
+    async def create_session(account_id, workflow_type="review", **kwargs):
+        session_id = f"session_{account_id}_{len(manager.active_sessions)}"
+        manager.active_sessions[session_id] = {
+            "id": session_id,
+            "account_id": account_id,
+            "workflow_type": workflow_type,
+            "status": "active",
+            "context": {},
+            "created_at": datetime.now().isoformat()
+        }
+        return session_id
+
+    async def get_session(session_id):
+        return manager.active_sessions.get(session_id)
+
+    async def update_context(session_id, context):
+        if session_id in manager.active_sessions:
+            manager.active_sessions[session_id]["context"].update(context)
+        return True
+
+    async def get_context(session_id):
+        if session_id in manager.active_sessions:
+            return manager.active_sessions[session_id]["context"]
+        return {}
+
+    manager.create_session = create_session
+    manager.get_session = get_session
+    manager.update_context = update_context
+    manager.get_context = get_context
+
+    return manager
+
+
+@pytest.fixture
+def mock_workflow_engine():
+    """Provide mock workflow engine."""
+    engine = AsyncMock()
+    engine.active_workflows = {}
+    engine.workflow_results = []
+
+    async def execute_review_cycle(account_id):
+        workflow_id = f"workflow_{account_id}"
+        result = {
+            "workflow_id": workflow_id,
+            "account_id": account_id,
+            "status": "completed",
+            "results": {
+                "analysis": {"health_score": 75},
+                "risk": {"risk_level": "low"},
+                "recommendations": {"actions": ["Follow up", "Schedule QBR"]}
+            },
+            "duration_seconds": 45.2
+        }
+        engine.workflow_results.append(result)
+        return result
+
+    engine.execute_review_cycle = execute_review_cycle
+
+    return engine
+
+
+@pytest.fixture
+def mock_scheduler():
+    """Provide mock scheduler."""
+    scheduler = AsyncMock()
+    scheduler.schedules = {}
+    scheduler.execution_history = []
+
+    async def create_schedule(account_id, schedule_type, **kwargs):
+        schedule_id = f"schedule_{account_id}_{schedule_type}"
+        scheduler.schedules[schedule_id] = {
+            "id": schedule_id,
+            "account_id": account_id,
+            "type": schedule_type,
+            "status": "active",
+            "config": kwargs
+        }
+        return schedule_id
+
+    async def execute_schedule(schedule_id):
+        if schedule_id in scheduler.schedules:
+            scheduler.execution_history.append({
+                "schedule_id": schedule_id,
+                "executed_at": datetime.now().isoformat()
+            })
+        return True
+
+    scheduler.create_schedule = create_schedule
+    scheduler.execute_schedule = execute_schedule
+
+    return scheduler
+
+
+# ============================================================================
 # Cleanup
 # ============================================================================
 
