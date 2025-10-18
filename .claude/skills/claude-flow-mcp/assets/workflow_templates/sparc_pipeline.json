@@ -1,0 +1,90 @@
+{
+  "name": "sparc_pipeline",
+  "description": "SPARC methodology development pipeline",
+  "topology": "ring",
+  "maxAgents": 5,
+  "agents": [
+    {
+      "type": "analyst",
+      "name": "Specification Writer",
+      "capabilities": ["requirements_analysis", "specification_writing", "use_case_definition"],
+      "position": 0
+    },
+    {
+      "type": "architect",
+      "name": "Pseudocode Designer",
+      "capabilities": ["algorithm_design", "pseudocode", "logic_flow"],
+      "position": 1
+    },
+    {
+      "type": "architect",
+      "name": "System Architect",
+      "capabilities": ["system_design", "architecture", "component_design"],
+      "position": 2
+    },
+    {
+      "type": "coder",
+      "name": "Implementation Engineer",
+      "capabilities": ["tdd", "implementation", "refactoring"],
+      "position": 3
+    },
+    {
+      "type": "reviewer",
+      "name": "Completion Validator",
+      "capabilities": ["validation", "integration_testing", "documentation"],
+      "position": 4
+    }
+  ],
+  "tasks": [
+    {
+      "name": "specification",
+      "description": "Define requirements and specifications",
+      "assignee": "Specification Writer",
+      "priority": "critical",
+      "dependencies": [],
+      "handoff_to": "pseudocode"
+    },
+    {
+      "name": "pseudocode",
+      "description": "Design algorithms and logic flow",
+      "assignee": "Pseudocode Designer",
+      "priority": "critical",
+      "dependencies": ["specification"],
+      "handoff_to": "architecture"
+    },
+    {
+      "name": "architecture",
+      "description": "Design system architecture",
+      "assignee": "System Architect",
+      "priority": "critical",
+      "dependencies": ["pseudocode"],
+      "handoff_to": "refinement"
+    },
+    {
+      "name": "refinement",
+      "description": "Implement with TDD and refine",
+      "assignee": "Implementation Engineer",
+      "priority": "critical",
+      "dependencies": ["architecture"],
+      "handoff_to": "completion"
+    },
+    {
+      "name": "completion",
+      "description": "Validate, test, and finalize",
+      "assignee": "Completion Validator",
+      "priority": "critical",
+      "dependencies": ["refinement"],
+      "handoff_to": null
+    }
+  ],
+  "memory_namespaces": [
+    "sparc/specification",
+    "sparc/pseudocode",
+    "sparc/architecture",
+    "sparc/refinement",
+    "sparc/completion"
+  ],
+  "workflow_mode": "sequential",
+  "handoff_validation": true,
+  "checkpoint_enabled": true
+}

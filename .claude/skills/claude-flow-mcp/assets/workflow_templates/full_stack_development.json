@@ -1,0 +1,99 @@
+{
+  "name": "full_stack_development",
+  "description": "Complete full-stack feature development workflow",
+  "topology": "hierarchical",
+  "maxAgents": 8,
+  "agents": [
+    {
+      "type": "coordinator",
+      "name": "Feature Lead",
+      "capabilities": ["project_management", "coordination", "integration"]
+    },
+    {
+      "type": "architect",
+      "name": "System Architect",
+      "capabilities": ["system_design", "architecture", "api_design"]
+    },
+    {
+      "type": "coder",
+      "name": "Backend Developer",
+      "capabilities": ["python", "fastapi", "postgresql", "sqlalchemy"]
+    },
+    {
+      "type": "coder",
+      "name": "Frontend Developer",
+      "capabilities": ["react", "typescript", "tailwind", "state_management"]
+    },
+    {
+      "type": "coder",
+      "name": "Database Developer",
+      "capabilities": ["postgresql", "migrations", "indexing", "optimization"]
+    },
+    {
+      "type": "tester",
+      "name": "QA Engineer",
+      "capabilities": ["pytest", "jest", "integration_testing", "e2e_testing"]
+    },
+    {
+      "type": "reviewer",
+      "name": "Code Reviewer",
+      "capabilities": ["code_review", "security", "best_practices"]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "architecture_design",
+      "description": "Design system architecture and API contracts",
+      "assignee": "System Architect",
+      "priority": "critical",
+      "dependencies": []
+    },
+    {
+      "name": "database_schema",
+      "description": "Design and implement database schema",
+      "assignee": "Database Developer",
+      "priority": "high",
+      "dependencies": ["architecture_design"]
+    },
+    {
+      "name": "backend_implementation",
+      "description": "Implement backend APIs and business logic",
+      "assignee": "Backend Developer",
+      "priority": "high",
+      "dependencies": ["database_schema"]
+    },
+    {
+      "name": "frontend_implementation",
+      "description": "Build frontend UI and integrate with APIs",
+      "assignee": "Frontend Developer",
+      "priority": "high",
+      "dependencies": ["backend_implementation"]
+    },
+    {
+      "name": "testing",
+      "description": "Create comprehensive test suite",
+      "assignee": "QA Engineer",
+      "priority": "high",
+      "dependencies": ["backend_implementation", "frontend_implementation"]
+    },
+    {
+      "name": "code_review",
+      "description": "Review code quality and security",
+      "assignee": "Code Reviewer",
+      "priority": "medium",
+      "dependencies": ["testing"]
+    },
+    {
+      "name": "integration",
+      "description": "Integrate all components and validate",
+      "assignee": "Feature Lead",
+      "priority": "high",
+      "dependencies": ["code_review"]
+    }
+  ],
+  "memory_namespaces": [
+    "project/architecture",
+    "project/decisions",
+    "swarm/progress"
+  ]
+}

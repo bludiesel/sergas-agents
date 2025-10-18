@@ -1,0 +1,98 @@
+{
+  "name": "zoho_account_analysis",
+  "description": "Zoho CRM account health analysis workflow",
+  "topology": "star",
+  "maxAgents": 6,
+  "agents": [
+    {
+      "type": "coordinator",
+      "name": "Analysis Hub",
+      "capabilities": ["orchestration", "report_generation", "prioritization"]
+    },
+    {
+      "type": "specialist",
+      "name": "Zoho Data Fetcher",
+      "capabilities": ["zoho_api", "data_extraction", "crm_integration"]
+    },
+    {
+      "type": "analyst",
+      "name": "Engagement Analyzer",
+      "capabilities": ["engagement_patterns", "activity_analysis", "trend_detection"]
+    },
+    {
+      "type": "analyst",
+      "name": "Risk Detector",
+      "capabilities": ["risk_assessment", "health_scoring", "churn_prediction"]
+    },
+    {
+      "type": "specialist",
+      "name": "Recommendation Engine",
+      "capabilities": ["action_planning", "recommendation_generation", "prioritization"]
+    },
+    {
+      "type": "specialist",
+      "name": "Report Generator",
+      "capabilities": ["reporting", "visualization", "communication_drafting"]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "fetch_account_data",
+      "description": "Retrieve account data from Zoho CRM",
+      "assignee": "Zoho Data Fetcher",
+      "priority": "critical",
+      "dependencies": []
+    },
+    {
+      "name": "analyze_engagement",
+      "description": "Analyze engagement patterns and activity levels",
+      "assignee": "Engagement Analyzer",
+      "priority": "high",
+      "dependencies": ["fetch_account_data"],
+      "parallel_with": ["detect_risks"]
+    },
+    {
+      "name": "detect_risks",
+      "description": "Identify at-risk accounts and health issues",
+      "assignee": "Risk Detector",
+      "priority": "high",
+      "dependencies": ["fetch_account_data"],
+      "parallel_with": ["analyze_engagement"]
+    },
+    {
+      "name": "generate_recommendations",
+      "description": "Create actionable recommendations",
+      "assignee": "Recommendation Engine",
+      "priority": "high",
+      "dependencies": ["analyze_engagement", "detect_risks"]
+    },
+    {
+      "name": "create_report",
+      "description": "Generate comprehensive analysis report",
+      "assignee": "Report Generator",
+      "priority": "medium",
+      "dependencies": ["generate_recommendations"]
+    },
+    {
+      "name": "synthesize_results",
+      "description": "Compile final insights and next steps",
+      "assignee": "Analysis Hub",
+      "priority": "medium",
+      "dependencies": ["create_report"]
+    }
+  ],
+  "memory_namespaces": [
+    "zoho/accounts",
+    "zoho/risks",
+    "zoho/recommendations"
+  ],
+  "neural_training": {
+    "enabled": true,
+    "pattern_type": "optimization",
+    "track_metrics": [
+      "accuracy",
+      "risk_detection_rate",
+      "recommendation_quality"
+    ]
+  }
+}
