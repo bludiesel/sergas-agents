@@ -1,8 +1,19 @@
-"""Alembic environment configuration for async migrations."""
+"""Alembic environment configuration for async migrations.
+
+Supports both PostgreSQL and SQLite via DATABASE_URL environment variable:
+- PostgreSQL: DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/dbname
+- SQLite: DATABASE_URL=sqlite+aiosqlite:///./data/sergas.db
+"""
 
 import asyncio
 from logging.config import fileConfig
 import os
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -28,9 +39,12 @@ if config.config_file_name is not None:
 # Target metadata for autogenerate support
 target_metadata = Base.metadata
 
-# Get database URL from environment
+# Get database URL from environment using DatabaseConfig
 db_config = DatabaseConfig()
 database_url = db_config.get_connection_string(use_async=True)
+
+# Detect database type for SQLite-specific handling
+is_sqlite = database_url.startswith("sqlite")
 
 # Override sqlalchemy.url in alembic.ini
 config.set_main_option("sqlalchemy.url", database_url)
@@ -48,37 +62,61 @@ def run_migrations_offline() -> None:
     script output.
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-        compare_type=True,
-        compare_server_default=True,
-    )
+
+    # SQLite-specific configuration
+    context_config = {
+        "url": url,
+        "target_metadata": target_metadata,
+        "literal_binds": True,
+        "dialect_opts": {"paramstyle": "named"},
+        "compare_type": True,
+        "compare_server_default": True,
+    }
+
+    # For SQLite, disable server default comparison (not fully supported)
+    if is_sqlite:
+        context_config["compare_server_default"] = False
+
+    context.configure(**context_config)
 
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection: Connection) -> None:
-    """Run migrations with connection."""
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=True,
-        compare_server_default=True,
-    )
+    """Run migrations with connection.
+
+    Handles both PostgreSQL and SQLite with appropriate settings.
+    """
+    context_config = {
+        "connection": connection,
+        "target_metadata": target_metadata,
+        "compare_type": True,
+        "compare_server_default": True,
+    }
+
+    # SQLite-specific adjustments
+    if is_sqlite:
+        # Disable server default comparison for SQLite
+        context_config["compare_server_default"] = False
+        # SQLite doesn't support concurrent transactions
+        context_config["transaction_per_migration"] = True
+
+    context.configure(**context_config)
 
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_async_migrations() -> None:
-    """Run migrations in async mode."""
+    """Run migrations in async mode.
+
+    Supports both PostgreSQL (asyncpg) and SQLite (aiosqlite).
+    """
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = database_url
 
+    # Use NullPool to avoid connection pool issues during migrations
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",

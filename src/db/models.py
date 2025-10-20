@@ -3,9 +3,10 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from sqlalchemy import String, Text, DateTime, Integer, Index, UniqueConstraint, Boolean, JSON, ARRAY
+from sqlalchemy import String, Text, DateTime, Integer, Index, UniqueConstraint, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from .types import JSONType, ArrayType
 
 
 class Base(DeclarativeBase):
@@ -172,10 +173,10 @@ class AgentSession(Base):
 
     # Context and state
     context_snapshot: Mapped[dict] = mapped_column(
-        JSONB, nullable=False, default=dict, comment="Session context snapshot"
+        JSONType, nullable=False, default=dict, comment="Session context snapshot"
     )
     account_ids: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(String), nullable=True, comment="Account IDs in session"
+        ArrayType(String), nullable=True, comment="Account IDs in session"
     )
     owner_id: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True, comment="Account owner ID"
@@ -334,9 +335,9 @@ class AuditEvent(Base):
         String(255), nullable=True, comment="Resource affected"
     )
 
-    # Flexible metadata
-    metadata: Mapped[Optional[dict]] = mapped_column(
-        JSONB, nullable=True, default=dict, comment="Additional event metadata"
+    # Flexible metadata (renamed from 'metadata' to avoid SQLAlchemy reserved word)
+    event_metadata: Mapped[Optional[dict]] = mapped_column(
+        JSONType, nullable=True, default=dict, comment="Additional event metadata"
     )
 
     # Constraints
