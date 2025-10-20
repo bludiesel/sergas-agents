@@ -1,0 +1,121 @@
+
+> frontend@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.6 (Turbopack)
+   - Local:        http://localhost:7007
+   - Network:      http://192.168.1.161:7007
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 803ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.5s
+ GET / 200 in 3012ms
+ GET / 200 in 77ms
+ GET / 200 in 63ms
+ ✓ Compiled /favicon.ico in 200ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 447ms
+ GET / 200 in 99ms
+ GET / 200 in 43ms
+ ✓ Compiled in 695ms
+ ✓ Compiled / in 128ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.11yd08vg1qr'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.11yd08vg1qr'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.e68bzo9apsf'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.e68bzo9apsf'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 660ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.3cp3l9i6pmi'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.3cp3l9i6pmi'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ja7s3wcsemd'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ja7s3wcsemd'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.11yd08vg1qr'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.11yd08vg1qr'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.e68bzo9apsf'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.e68bzo9apsf'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.nilmcpfz95m'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.nilmcpfz95m'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ymgng2rlwc9'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ymgng2rlwc9'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ivmx7rz3y'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ivmx7rz3y'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.628440986z'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.628440986z'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6jbh0wvk72v'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6jbh0wvk72v'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.9nssy8vsqtp'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.9nssy8vsqtp'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6jbh0wvk72v'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6jbh0wvk72v'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ua42aa9mo9s'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.ua42aa9mo9s'
+}
+[Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6hpfh6wrpnk'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.6hpfh6wrpnk'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.qf1u82pz5rc'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/mohammadabdelrahman/Projects/sergas_agents/frontend/.next/static/development/_buildManifest.js.tmp.qf1u82pz5rc'
+}
+[?25h
