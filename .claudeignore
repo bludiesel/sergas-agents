@@ -1,0 +1,3 @@
+# Tell Claude Code to ignore .env file for authentication
+.env
+.env.local

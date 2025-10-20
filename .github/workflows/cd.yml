@@ -1,0 +1,486 @@
+# Sergas Super Account Manager - Continuous Deployment Pipeline
+# Automated deployment with blue-green strategy and zero-downtime
+
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip test execution'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: '3.14'
+  AWS_REGION: 'us-east-1'
+  ECR_REPOSITORY: 'sergas-super-account-manager'
+  ECS_CLUSTER: 'sergas-cluster'
+  TERRAFORM_VERSION: '1.6.0'
+
+jobs:
+  # ===================================
+  # Determine Deployment Environment
+  # ===================================
+  determine-environment:
+    name: Determine Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      deploy: ${{ steps.set-env.outputs.deploy }}
+
+    steps:
+      - name: Determine environment from branch/tag
+        id: set-env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV="${{ github.event.inputs.environment }}"
+            echo "environment=$ENV" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ===================================
+  # Build & Push Docker Images
+  # ===================================
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [determine-environment]
+    if: needs.determine-environment.outputs.deploy == 'true'
+    timeout-minutes: 30
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ needs.determine-environment.outputs.environment }}-latest
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/production/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            ENVIRONMENT=${{ needs.determine-environment.outputs.environment }}
+            VERSION=${{ github.sha }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ===================================
+  # Deploy to Development
+  # ===================================
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-push]
+    if: needs.determine-environment.outputs.environment == 'dev'
+    environment:
+      name: development
+      url: https://dev.sergas-agents.com
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          cd terraform/environments/dev
+          terraform init
+
+      - name: Terraform Plan
+        run: |
+          cd terraform/environments/dev
+          terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd terraform/environments/dev
+          terraform apply -auto-approve tfplan
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }}-dev \
+            --service sergas-agent-service-dev \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }}-dev \
+            --services sergas-agent-service-dev \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Run database migrations
+        run: |
+          ./scripts/deploy/run_migrations.sh dev
+
+      - name: Run smoke tests
+        run: |
+          ./scripts/deploy/smoke_tests.sh https://dev.sergas-agents.com
+
+      - name: Notify deployment status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment.id,
+              state: '${{ job.status }}',
+              description: `${status} Deployment to development`,
+              environment_url: 'https://dev.sergas-agents.com'
+            });
+
+  # ===================================
+  # Deploy to Staging (Blue-Green)
+  # ===================================
+  deploy-staging:
+    name: Deploy to Staging (Blue-Green)
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-push]
+    if: needs.determine-environment.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.sergas-agents.com
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Green environment
+        run: |
+          ./scripts/deploy/blue_green_deploy.sh staging green ${{ needs.build-push.outputs.image-tag }}
+
+      - name: Run database migrations on Green
+        run: |
+          ./scripts/deploy/run_migrations.sh staging-green
+
+      - name: Run health checks on Green
+        run: |
+          ./scripts/deploy/health_check.sh https://green-staging.sergas-agents.com
+
+      - name: Run integration tests on Green
+        run: |
+          pytest tests/integration --env=staging-green
+
+      - name: Switch traffic to Green (50%)
+        run: |
+          ./scripts/deploy/traffic_switch.sh staging 50
+
+      - name: Monitor metrics for 5 minutes
+        run: |
+          ./scripts/deploy/monitor_metrics.sh staging 300
+
+      - name: Switch all traffic to Green (100%)
+        run: |
+          ./scripts/deploy/traffic_switch.sh staging 100
+
+      - name: Decommission Blue environment
+        run: |
+          ./scripts/deploy/decommission_environment.sh staging blue
+
+      - name: Tag Green as Blue
+        run: |
+          ./scripts/deploy/tag_environment.sh staging green blue
+
+  # ===================================
+  # Deploy to Production (Blue-Green with Approval)
+  # ===================================
+  deploy-production:
+    name: Deploy to Production (Blue-Green)
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-push]
+    if: needs.determine-environment.outputs.environment == 'production'
+    environment:
+      name: production
+      url: https://sergas-agents.com
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create backup of current production
+        run: |
+          ./scripts/deploy/create_backup.sh production
+
+      - name: Deploy to Green environment
+        run: |
+          ./scripts/deploy/blue_green_deploy.sh production green ${{ needs.build-push.outputs.image-tag }}
+
+      - name: Run database migrations on Green (dry-run)
+        run: |
+          ./scripts/deploy/run_migrations.sh production-green --dry-run
+
+      - name: Run database migrations on Green
+        run: |
+          ./scripts/deploy/run_migrations.sh production-green
+
+      - name: Run comprehensive health checks
+        run: |
+          ./scripts/deploy/health_check.sh https://green-production.sergas-agents.com --comprehensive
+
+      - name: Run smoke tests
+        run: |
+          ./scripts/deploy/smoke_tests.sh https://green-production.sergas-agents.com
+
+      - name: Run E2E tests
+        run: |
+          pytest tests/e2e --env=production-green --fail-fast
+
+      - name: Switch traffic to Green (10%)
+        run: |
+          ./scripts/deploy/traffic_switch.sh production 10
+
+      - name: Monitor metrics for 5 minutes (10% traffic)
+        run: |
+          ./scripts/deploy/monitor_metrics.sh production 300 --threshold-error-rate=0.1
+
+      - name: Switch traffic to Green (50%)
+        run: |
+          ./scripts/deploy/traffic_switch.sh production 50
+
+      - name: Monitor metrics for 10 minutes (50% traffic)
+        run: |
+          ./scripts/deploy/monitor_metrics.sh production 600 --threshold-error-rate=0.1
+
+      - name: Switch all traffic to Green (100%)
+        run: |
+          ./scripts/deploy/traffic_switch.sh production 100
+
+      - name: Monitor metrics for 15 minutes (100% traffic)
+        run: |
+          ./scripts/deploy/monitor_metrics.sh production 900 --threshold-error-rate=0.1
+
+      - name: Decommission Blue environment
+        run: |
+          ./scripts/deploy/decommission_environment.sh production blue
+
+      - name: Tag Green as Blue
+        run: |
+          ./scripts/deploy/tag_environment.sh production green blue
+
+      - name: Clean up old backups
+        run: |
+          ./scripts/deploy/cleanup_backups.sh production --keep=5
+
+  # ===================================
+  # Rollback on Failure
+  # ===================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine failed environment
+        id: failed-env
+        run: |
+          if [[ "${{ needs.deploy-production.result }}" == "failure" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.deploy-staging.result }}" == "failure" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rollback to Blue environment
+        run: |
+          ./scripts/deploy/rollback.sh ${{ steps.failed-env.outputs.environment }}
+
+      - name: Verify rollback health
+        run: |
+          ./scripts/deploy/health_check.sh https://${{ steps.failed-env.outputs.environment }}.sergas-agents.com
+
+      - name: Rollback database migrations
+        run: |
+          ./scripts/deploy/rollback_migrations.sh ${{ steps.failed-env.outputs.environment }}
+
+      - name: Send rollback notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Deployment Rollback: ${{ steps.failed-env.outputs.environment }}',
+              body: 'Automatic rollback triggered due to deployment failure.\n\nSHA: ${{ github.sha }}\nEnvironment: ${{ steps.failed-env.outputs.environment }}',
+              labels: ['deployment', 'rollback', 'critical']
+            });
+
+  # ===================================
+  # Post-Deployment Validation
+  # ===================================
+  post-deployment:
+    name: Post-Deployment Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine deployed environment
+        id: env
+        run: |
+          if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "url=https://sergas-agents.com" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "url=https://staging.sergas-agents.com" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.deploy-dev.result }}" == "success" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "url=https://dev.sergas-agents.com" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run comprehensive health checks
+        run: |
+          ./scripts/deploy/health_check.sh ${{ steps.env.outputs.url }} --comprehensive
+
+      - name: Verify API endpoints
+        run: |
+          ./scripts/deploy/verify_endpoints.sh ${{ steps.env.outputs.url }}
+
+      - name: Check database connectivity
+        run: |
+          ./scripts/deploy/check_database.sh ${{ steps.env.outputs.environment }}
+
+      - name: Verify monitoring and alerts
+        run: |
+          ./scripts/deploy/verify_monitoring.sh ${{ steps.env.outputs.environment }}
+
+      - name: Generate deployment report
+        run: |
+          ./scripts/deploy/generate_report.sh ${{ steps.env.outputs.environment }} > deployment-report.md
+
+      - name: Upload deployment report
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-report-${{ steps.env.outputs.environment }}
+          path: deployment-report.md
+          retention-days: 90
+
+      - name: Post deployment summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('deployment-report.md', 'utf8');
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `## 🚀 Deployment Report\n\n${report}`
+            });
