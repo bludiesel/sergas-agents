@@ -1,0 +1,297 @@
+# Sergas Super Account Manager - Alert Rules
+# Production-ready alerting for critical system events
+# Generated: 2025-10-19
+
+# ============================================
+# Alert Rule Groups
+# ============================================
+groups:
+  # ==========================================
+  # Critical Service Alerts
+  # ==========================================
+  - name: critical_service_alerts
+    interval: 30s
+    rules:
+      # Service Down Alert
+      - alert: ServiceDown
+        expr: up{job=~"sergas_app|postgres|redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute."
+          runbook_url: "https://docs.sergas.com/runbooks/service-down"
+          dashboard_url: "http://localhost:3000/d/system-overview"
+
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: rate(sergas_http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+          team: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.sergas.com/runbooks/high-error-rate"
+
+      # API Latency Critical
+      - alert: APILatencyCritical
+        expr: histogram_quantile(0.95, rate(sergas_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+          team: backend
+        annotations:
+          summary: "API latency is critically high"
+          description: "95th percentile latency is {{ $value }}s (threshold: 2s)"
+          runbook_url: "https://docs.sergas.com/runbooks/high-latency"
+
+  # ==========================================
+  # Database Alerts
+  # ==========================================
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # Database Connection Pool Exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+          team: platform
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Connection pool usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.sergas.com/runbooks/db-connection-pool"
+
+      # High Database Query Time
+      - alert: HighDatabaseQueryTime
+        expr: rate(pg_stat_statements_mean_exec_time[5m]) > 500
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          team: backend
+        annotations:
+          summary: "Database queries are slow"
+          description: "Average query time is {{ $value }}ms (threshold: 500ms)"
+          runbook_url: "https://docs.sergas.com/runbooks/slow-queries"
+
+      # Database Disk Space Low
+      - alert: DatabaseDiskSpaceLow
+        expr: pg_database_size_bytes / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+          team: platform
+        annotations:
+          summary: "Database disk space running low"
+          description: "Database disk usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+          runbook_url: "https://docs.sergas.com/runbooks/disk-space"
+
+  # ==========================================
+  # Cache Alerts
+  # ==========================================
+  - name: cache_alerts
+    interval: 30s
+    rules:
+      # Redis High Memory Usage
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+          team: platform
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+          runbook_url: "https://docs.sergas.com/runbooks/redis-memory"
+
+      # Low Cache Hit Rate
+      - alert: LowCacheHitRate
+        expr: rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: performance
+          team: backend
+        annotations:
+          summary: "Cache hit rate is low"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://docs.sergas.com/runbooks/cache-hit-rate"
+
+  # ==========================================
+  # Business Metrics Alerts
+  # ==========================================
+  - name: business_metrics_alerts
+    interval: 1m
+    rules:
+      # Zoho Sync Failures
+      - alert: ZohoSyncFailures
+        expr: rate(sergas_zoho_sync_failures_total[15m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          category: integration
+          team: integration
+        annotations:
+          summary: "High rate of Zoho sync failures"
+          description: "Sync failure rate is {{ $value }} per second (threshold: 0.1/s)"
+          runbook_url: "https://docs.sergas.com/runbooks/zoho-sync-failures"
+
+      # Recommendation Generation Stalled
+      - alert: RecommendationGenerationStalled
+        expr: rate(sergas_recommendations_generated_total[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          category: business
+          team: ai
+        annotations:
+          summary: "No recommendations generated recently"
+          description: "No recommendations have been generated in the last 30 minutes"
+          runbook_url: "https://docs.sergas.com/runbooks/recommendation-stalled"
+
+      # High Memory Processing Latency
+      - alert: HighMemoryProcessingLatency
+        expr: histogram_quantile(0.95, rate(sergas_memory_processing_duration_seconds_bucket[10m])) > 10
+        for: 15m
+        labels:
+          severity: warning
+          category: performance
+          team: ai
+        annotations:
+          summary: "Memory processing is slow"
+          description: "95th percentile memory processing time is {{ $value }}s (threshold: 10s)"
+          runbook_url: "https://docs.sergas.com/runbooks/memory-processing-slow"
+
+  # ==========================================
+  # Infrastructure Alerts
+  # ==========================================
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+          team: platform
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% (threshold: 85%)"
+          runbook_url: "https://docs.sergas.com/runbooks/high-cpu"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+          team: platform
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
+          runbook_url: "https://docs.sergas.com/runbooks/high-memory"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+          team: platform
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Available disk space is {{ $value }}% on {{ $labels.mountpoint }}"
+          runbook_url: "https://docs.sergas.com/runbooks/disk-space"
+
+      # Container Restart
+      - alert: ContainerRestart
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          category: stability
+          team: platform
+        annotations:
+          summary: "Container {{ $labels.container }} is restarting"
+          description: "Container restart rate is {{ $value }} per second"
+          runbook_url: "https://docs.sergas.com/runbooks/container-restart"
+
+  # ==========================================
+  # Agent Performance Alerts
+  # ==========================================
+  - name: agent_alerts
+    interval: 1m
+    rules:
+      # Agent Processing Backlog
+      - alert: AgentProcessingBacklog
+        expr: sergas_agent_queue_size > 1000
+        for: 15m
+        labels:
+          severity: warning
+          category: performance
+          team: ai
+        annotations:
+          summary: "Agent {{ $labels.agent_type }} has a large backlog"
+          description: "Queue size is {{ $value }} items (threshold: 1000)"
+          runbook_url: "https://docs.sergas.com/runbooks/agent-backlog"
+
+      # Agent Failure Rate High
+      - alert: AgentFailureRateHigh
+        expr: rate(sergas_agent_task_failures_total[10m]) / rate(sergas_agent_task_attempts_total[10m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          category: reliability
+          team: ai
+        annotations:
+          summary: "High failure rate for agent {{ $labels.agent_type }}"
+          description: "Failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://docs.sergas.com/runbooks/agent-failures"
+
+  # ==========================================
+  # Rate Limiting Alerts
+  # ==========================================
+  - name: rate_limiting_alerts
+    interval: 1m
+    rules:
+      # API Rate Limit Approaching
+      - alert: APIRateLimitApproaching
+        expr: sergas_rate_limit_remaining / sergas_rate_limit_total < 0.2
+        for: 5m
+        labels:
+          severity: info
+          category: throttling
+          team: backend
+        annotations:
+          summary: "API rate limit approaching for {{ $labels.endpoint }}"
+          description: "{{ $value | humanizePercentage }} of rate limit remaining"
+          runbook_url: "https://docs.sergas.com/runbooks/rate-limit"
+
+      # Zoho API Rate Limit Hit
+      - alert: ZohoRateLimitHit
+        expr: increase(sergas_zoho_rate_limit_exceeded_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: integration
+          team: integration
+        annotations:
+          summary: "Zoho API rate limit frequently exceeded"
+          description: "Rate limit exceeded {{ $value }} times in 5 minutes"
+          runbook_url: "https://docs.sergas.com/runbooks/zoho-rate-limit"

@@ -1,0 +1,228 @@
+{
+  "dashboard": {
+    "title": "Error Tracking Dashboard",
+    "tags": ["sergas", "errors", "monitoring"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-3h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Overall Error Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_errors_total[5m])",
+            "legendFormat": "{{component}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Errors/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "HTTP Error Breakdown",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_http_requests_total{status=~\"4..|5..\"}[5m])",
+            "legendFormat": "{{status}} - {{endpoint}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Errors/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Errors by Severity",
+        "type": "piechart",
+        "gridPos": {"x": 0, "y": 6, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "sum by(severity) (increase(sergas_errors_total[1h]))",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "pieType": "pie"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Top Error Types",
+        "type": "table",
+        "gridPos": {"x": 8, "y": 6, "w": 16, "h": 6},
+        "targets": [
+          {
+            "expr": "topk(10, sum by(error_type, component) (increase(sergas_errors_total[1h])))",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "error_type": "Error Type",
+                "component": "Component",
+                "Value": "Count"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Unhandled Exceptions",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_exceptions_unhandled_total[5m])",
+            "legendFormat": "{{exception_type}} in {{module}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Exceptions/sec"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.1], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "name": "Unhandled Exception Alert"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Errors",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_database_transactions_total{status=\"error\"}[5m])",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "DB Errors/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Agent Task Failures",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 18, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_agent_task_failures_total[5m])",
+            "legendFormat": "{{agent_type}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Failures/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Zoho Integration Failures",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 18, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_zoho_sync_failures_total[5m])",
+            "legendFormat": "{{sync_type}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Failures/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Error Count Last 24h",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(increase(sergas_errors_total[24h]))",
+            "legendFormat": "Total Errors"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 100, "color": "yellow"},
+                {"value": 1000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Critical Errors Last Hour",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(increase(sergas_errors_total{severity=\"critical\"}[1h]))",
+            "legendFormat": "Critical"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "orange"},
+                {"value": 10, "color": "red"}
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}

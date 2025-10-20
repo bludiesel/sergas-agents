@@ -1,0 +1,277 @@
+version: '3.8'
+
+# Sergas Super Account Manager - Monitoring Stack
+# Complete observability with Prometheus, Grafana, and AlertManager
+# Generated: 2025-10-19
+
+services:
+  # ============================================
+  # Prometheus - Time-series metrics database
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: sergas_prometheus
+    restart: unless-stopped
+    user: root
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-admin-api'
+    volumes:
+      - ../../config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../config/alerts/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      service: "prometheus"
+      environment: "production"
+
+  # ============================================
+  # AlertManager - Alert routing and management
+  # ============================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: sergas_alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    volumes:
+      - ../../config/alerts/alertmanager.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "alertmanager"
+      environment: "production"
+
+  # ============================================
+  # Grafana - Visualization and dashboards
+  # ============================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: sergas_grafana
+    restart: unless-stopped
+    user: root
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=sergas_admin_2025
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_LOG_LEVEL=info
+    volumes:
+      - ../../grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      service: "grafana"
+      environment: "production"
+
+  # ============================================
+  # Node Exporter - System metrics
+  # ============================================
+  node_exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: sergas_node_exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "node_exporter"
+      environment: "production"
+
+  # ============================================
+  # cAdvisor - Container metrics
+  # ============================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: sergas_cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "cadvisor"
+      environment: "production"
+
+  # ============================================
+  # Redis Exporter - Redis metrics
+  # ============================================
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: sergas_redis_exporter
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    ports:
+      - "9121:9121"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9121/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "redis_exporter"
+      environment: "production"
+
+  # ============================================
+  # PostgreSQL Exporter - Database metrics
+  # ============================================
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: sergas_postgres_exporter
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-sergas}:${POSTGRES_PASSWORD:-sergas_dev_2025}@postgres:5432/${POSTGRES_DB:-sergas_crm}?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9187/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "postgres_exporter"
+      environment: "production"
+
+  # ============================================
+  # Pushgateway - Batch job metrics
+  # ============================================
+  pushgateway:
+    image: prom/pushgateway:v1.6.2
+    container_name: sergas_pushgateway
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9091/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "pushgateway"
+      environment: "production"
+
+  # ============================================
+  # Blackbox Exporter - Endpoint monitoring
+  # ============================================
+  blackbox_exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: sergas_blackbox_exporter
+    restart: unless-stopped
+    command:
+      - '--config.file=/config/blackbox.yml'
+    volumes:
+      - ../../config/prometheus/blackbox.yml:/config/blackbox.yml:ro
+    ports:
+      - "9115:9115"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9115/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      service: "blackbox_exporter"
+      environment: "production"
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  monitoring:
+    driver: bridge
+    name: sergas_monitoring
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  prometheus_data:
+    driver: local
+    name: sergas_prometheus_data
+  alertmanager_data:
+    driver: local
+    name: sergas_alertmanager_data
+  grafana_data:
+    driver: local
+    name: sergas_grafana_data

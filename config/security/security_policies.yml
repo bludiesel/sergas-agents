@@ -1,0 +1,701 @@
+# Security Policies Configuration
+# Sergas Super Account Manager
+# Version: 1.0
+# Last Updated: 2025-10-19
+
+---
+# ===================================================================
+# 1. PASSWORD POLICIES
+# ===================================================================
+password_policy:
+  # Complexity requirements
+  complexity:
+    min_length: 12
+    max_length: 128
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_characters: true
+    special_characters: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+
+  # Character restrictions
+  restrictions:
+    no_username: true
+    no_common_words: true
+    no_repeated_characters_max: 3
+    no_sequential_characters: true
+
+  # Password history
+  history:
+    remember_count: 5  # Cannot reuse last 5 passwords
+    enforce_history: true
+
+  # Expiration
+  expiration:
+    max_age_days: 90
+    warn_before_expiry_days: 14
+    grace_period_days: 7
+    force_change_on_first_login: true
+
+  # Lockout policy
+  lockout:
+    max_failed_attempts: 10
+    lockout_duration_minutes: 30
+    reset_failed_count_after_minutes: 15
+    progressive_delay: true  # Increase delay after each failure
+
+  # Validation
+  validation:
+    check_breached_passwords: true
+    breached_password_api: "https://api.pwnedpasswords.com/range/"
+    minimum_entropy_bits: 50
+
+  # Password reset
+  reset:
+    token_expiry_minutes: 30
+    token_length: 64
+    max_reset_attempts_per_hour: 3
+    require_current_password_for_change: true
+    notify_user_on_change: true
+
+# ===================================================================
+# 2. ACCESS CONTROL POLICIES
+# ===================================================================
+access_control:
+  # Role-Based Access Control (RBAC)
+  rbac:
+    enabled: true
+    default_role: "user"
+    available_roles:
+      - name: "admin"
+        description: "Full system access"
+        permissions:
+          - "users:*"
+          - "accounts:*"
+          - "recommendations:*"
+          - "system:*"
+          - "audit:read"
+
+      - name: "account_owner"
+        description: "Manage assigned accounts"
+        permissions:
+          - "accounts:read"
+          - "accounts:update_assigned"
+          - "recommendations:read"
+          - "recommendations:approve"
+          - "recommendations:reject"
+
+      - name: "analyst"
+        description: "Read and analyze accounts"
+        permissions:
+          - "accounts:read"
+          - "recommendations:read"
+          - "reports:read"
+
+      - name: "user"
+        description: "Basic user access"
+        permissions:
+          - "accounts:read_assigned"
+          - "recommendations:read_assigned"
+
+      - name: "auditor"
+        description: "Read-only access for auditing"
+        permissions:
+          - "audit:read"
+          - "accounts:read"
+          - "recommendations:read"
+
+  # Attribute-Based Access Control (ABAC)
+  abac:
+    enabled: true
+    attributes:
+      - user_department
+      - user_location
+      - data_classification
+      - time_of_access
+      - ip_address
+
+  # Permission enforcement
+  enforcement:
+    check_on_every_request: true
+    cache_permissions: true
+    cache_ttl_seconds: 300
+    deny_by_default: true
+    log_access_decisions: true
+
+  # Least privilege
+  least_privilege:
+    enforce: true
+    auto_expire_elevated_permissions: true
+    elevated_permission_duration_hours: 4
+    require_justification: true
+
+  # Segregation of duties
+  segregation_of_duties:
+    enforce: true
+    conflicting_role_pairs:
+      - ["admin", "auditor"]
+      - ["account_owner", "auditor"]
+    require_approval_for_conflicting_roles: true
+
+# ===================================================================
+# 3. AUTHENTICATION POLICIES
+# ===================================================================
+authentication:
+  # Multi-Factor Authentication (MFA)
+  mfa:
+    enabled: true
+    enforce_for_roles: ["admin", "account_owner"]
+    optional_for_roles: ["analyst", "user"]
+    methods:
+      - type: "totp"
+        name: "Authenticator App"
+        enabled: true
+
+      - type: "sms"
+        name: "SMS Code"
+        enabled: true
+        rate_limit_per_hour: 5
+
+      - type: "email"
+        name: "Email Code"
+        enabled: true
+        rate_limit_per_hour: 3
+
+      - type: "backup_codes"
+        name: "Backup Codes"
+        enabled: true
+        count: 10
+
+    remember_device: true
+    remember_device_duration_days: 30
+    require_reauth_for_sensitive_ops: true
+
+  # Session management
+  session:
+    token_algorithm: "HS256"
+    token_secret_rotation_days: 90
+    access_token_expiry_minutes: 30
+    refresh_token_expiry_days: 7
+    absolute_timeout_hours: 8
+    idle_timeout_minutes: 15
+    enforce_single_session: false
+
+    # Session security
+    security:
+      secure_cookie: true
+      httponly_cookie: true
+      samesite: "strict"
+      regenerate_on_privilege_change: true
+      bind_to_ip: false  # Set true for high security
+      bind_to_user_agent: true
+
+  # OAuth settings
+  oauth:
+    allowed_grant_types:
+      - "authorization_code"
+      - "refresh_token"
+    require_pkce: true
+    token_encryption: true
+    token_encryption_algorithm: "AES-256-GCM"
+    rotate_refresh_tokens: true
+
+  # Rate limiting
+  rate_limiting:
+    login_attempts:
+      max_per_ip_per_hour: 10
+      max_per_user_per_hour: 5
+      lockout_duration_minutes: 30
+
+    api_requests:
+      max_per_ip_per_minute: 60
+      max_per_user_per_minute: 100
+
+    password_reset:
+      max_per_email_per_hour: 3
+
+  # Brute force protection
+  brute_force:
+    enabled: true
+    progressive_delay: true
+    base_delay_seconds: 2
+    max_delay_seconds: 30
+    captcha_after_failures: 3
+    notify_user_on_lockout: true
+
+# ===================================================================
+# 4. DATA PROTECTION POLICIES
+# ===================================================================
+data_protection:
+  # Encryption at rest
+  encryption_at_rest:
+    enabled: true
+    algorithm: "AES-256-GCM"
+    key_management:
+      provider: "aws_kms"  # Options: aws_kms, hashicorp_vault, local
+      key_rotation_days: 90
+      key_version_retention: 3
+
+    # Encryption scope
+    encrypted_fields:
+      - "oauth_access_token"
+      - "oauth_refresh_token"
+      - "api_keys"
+      - "client_secrets"
+      - "password_hashes"
+      - "pii_data"
+      - "financial_data"
+
+  # Encryption in transit
+  encryption_in_transit:
+    enforce_tls: true
+    min_tls_version: "1.2"
+    preferred_tls_version: "1.3"
+    cipher_suites:
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_AES_128_GCM_SHA256"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+    require_client_certificates: false
+    hsts_max_age_seconds: 31536000
+    hsts_include_subdomains: true
+
+  # Data classification
+  classification:
+    levels:
+      - name: "public"
+        encryption_required: false
+        audit_access: false
+
+      - name: "internal"
+        encryption_required: true
+        audit_access: true
+
+      - name: "confidential"
+        encryption_required: true
+        audit_access: true
+        require_mfa_for_access: true
+
+      - name: "restricted"
+        encryption_required: true
+        audit_access: true
+        require_mfa_for_access: true
+        require_approval_for_access: true
+
+    default_classification: "internal"
+
+  # Data masking
+  masking:
+    enabled: true
+    mask_in_logs: true
+    mask_in_responses: true
+
+    patterns:
+      - name: "email"
+        regex: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+        mask_format: "***@***.***"
+
+      - name: "phone"
+        regex: "\\+?[1-9]\\d{1,14}"
+        mask_format: "***-***-****"
+
+      - name: "ssn"
+        regex: "\\d{3}-\\d{2}-\\d{4}"
+        mask_format: "***-**-****"
+
+      - name: "credit_card"
+        regex: "\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}"
+        mask_format: "****-****-****-****"
+
+      - name: "api_key"
+        regex: "[A-Za-z0-9]{32,}"
+        mask_format: "****"
+
+  # Data sanitization
+  sanitization:
+    enabled: true
+    html_encode: true
+    sql_escape: true
+    remove_null_bytes: true
+    normalize_unicode: true
+
+  # Secure deletion
+  secure_deletion:
+    enabled: true
+    overwrite_passes: 3
+    verify_deletion: true
+    log_deletions: true
+
+# ===================================================================
+# 5. DATA RETENTION POLICIES
+# ===================================================================
+data_retention:
+  # General retention
+  default_retention_days: 365
+
+  # Data type specific retention
+  retention_periods:
+    - data_type: "audit_logs"
+      retention_days: 2555  # 7 years for compliance
+      archive_after_days: 365
+      deletion_method: "secure_deletion"
+
+    - data_type: "user_data"
+      retention_days: 1095  # 3 years
+      archive_after_days: 365
+      anonymize_after_days: 1095
+
+    - data_type: "account_data"
+      retention_days: 2555  # 7 years for business records
+      archive_after_days: 365
+
+    - data_type: "recommendations"
+      retention_days: 1095  # 3 years
+      archive_after_days: 365
+
+    - data_type: "session_logs"
+      retention_days: 90
+      archive_after_days: 30
+
+    - data_type: "security_logs"
+      retention_days: 2555  # 7 years
+      archive_after_days: 365
+
+    - data_type: "oauth_tokens"
+      retention_days: 7
+      purge_expired_immediately: true
+
+    - data_type: "temporary_files"
+      retention_days: 7
+      auto_cleanup: true
+
+  # Archive settings
+  archival:
+    enabled: true
+    compression: true
+    encryption: true
+    storage_tier: "glacier"
+    verify_integrity: true
+
+  # Data minimization
+  minimization:
+    enabled: true
+    collect_only_necessary: true
+    remove_redundant_data: true
+    anonymize_when_possible: true
+
+  # Right to erasure
+  erasure:
+    enabled: true
+    process_requests_within_days: 30
+    verify_identity: true
+    notify_third_parties: true
+    log_erasure_requests: true
+
+# ===================================================================
+# 6. AUDIT AND LOGGING POLICIES
+# ===================================================================
+audit_logging:
+  # General logging
+  enabled: true
+  log_level: "INFO"
+  structured_logging: true
+
+  # Event categories to log
+  log_events:
+    authentication:
+      - "login_success"
+      - "login_failure"
+      - "logout"
+      - "mfa_enabled"
+      - "mfa_disabled"
+      - "password_change"
+      - "password_reset"
+
+    authorization:
+      - "permission_granted"
+      - "permission_denied"
+      - "role_assigned"
+      - "role_revoked"
+      - "privilege_escalation"
+
+    data_access:
+      - "data_read"
+      - "data_create"
+      - "data_update"
+      - "data_delete"
+      - "export_data"
+      - "import_data"
+
+    system:
+      - "configuration_change"
+      - "system_start"
+      - "system_stop"
+      - "backup_created"
+      - "backup_restored"
+
+    security:
+      - "security_alert"
+      - "vulnerability_detected"
+      - "attack_detected"
+      - "firewall_block"
+      - "rate_limit_exceeded"
+
+  # Log enrichment
+  enrichment:
+    include_user_id: true
+    include_session_id: true
+    include_ip_address: true
+    include_user_agent: true
+    include_timestamp: true
+    include_request_id: true
+    include_correlation_id: true
+
+  # Sensitive data handling
+  sensitive_data:
+    mask_passwords: true
+    mask_tokens: true
+    mask_api_keys: true
+    mask_pii: true
+
+    sensitive_fields:
+      - "password"
+      - "secret"
+      - "token"
+      - "api_key"
+      - "authorization"
+      - "ssn"
+      - "credit_card"
+
+  # Log integrity
+  integrity:
+    enable_signing: true
+    signing_algorithm: "HMAC-SHA256"
+    enable_write_once: true
+    enable_tamper_detection: true
+
+  # Log storage
+  storage:
+    backend: "postgresql"
+    separate_security_logs: true
+    encrypt_logs: true
+    compress_logs: true
+
+  # Log retention (see data_retention section)
+  retention_days: 2555
+
+  # Alerting
+  alerting:
+    enabled: true
+    alert_on:
+      - "multiple_failed_logins"
+      - "privilege_escalation_attempt"
+      - "data_exfiltration_pattern"
+      - "unusual_access_pattern"
+      - "configuration_change"
+      - "security_policy_violation"
+
+    notification_channels:
+      - type: "email"
+        recipients: ["security@example.com"]
+        severity_threshold: "HIGH"
+
+      - type: "slack"
+        webhook_url: "${SLACK_SECURITY_WEBHOOK}"
+        severity_threshold: "CRITICAL"
+
+      - type: "pagerduty"
+        integration_key: "${PAGERDUTY_KEY}"
+        severity_threshold: "CRITICAL"
+
+# ===================================================================
+# 7. NETWORK SECURITY POLICIES
+# ===================================================================
+network_security:
+  # IP whitelisting
+  ip_whitelist:
+    enabled: false
+    allowed_ips: []
+    allow_private_ranges: true
+
+  # IP blacklisting
+  ip_blacklist:
+    enabled: true
+    blocked_ips: []
+    auto_block_on_attack: true
+    block_duration_hours: 24
+
+  # Geographic restrictions
+  geo_restrictions:
+    enabled: false
+    allowed_countries: []
+    blocked_countries: []
+
+  # CORS policy
+  cors:
+    enabled: true
+    allowed_origins:
+      - "https://app.example.com"
+    allowed_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+    allowed_headers:
+      - "Authorization"
+      - "Content-Type"
+    allow_credentials: true
+    max_age_seconds: 3600
+
+  # Security headers
+  security_headers:
+    content_security_policy: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+    x_frame_options: "DENY"
+    x_content_type_options: "nosniff"
+    strict_transport_security: "max-age=31536000; includeSubDomains"
+    x_xss_protection: "1; mode=block"
+    referrer_policy: "strict-origin-when-cross-origin"
+    permissions_policy: "geolocation=(), microphone=(), camera=()"
+
+  # API security
+  api_security:
+    require_api_version: true
+    deprecate_old_versions: true
+    version_sunset_days: 180
+    rate_limit_by_api_key: true
+    log_all_requests: true
+
+# ===================================================================
+# 8. INCIDENT RESPONSE POLICIES
+# ===================================================================
+incident_response:
+  # Incident classification
+  severity_levels:
+    - level: "CRITICAL"
+      description: "Data breach, system compromise"
+      response_time_minutes: 15
+      escalation: "immediate"
+
+    - level: "HIGH"
+      description: "Security vulnerability, unauthorized access"
+      response_time_minutes: 60
+      escalation: "within_1_hour"
+
+    - level: "MEDIUM"
+      description: "Policy violation, suspicious activity"
+      response_time_minutes: 240
+      escalation: "within_4_hours"
+
+    - level: "LOW"
+      description: "Minor security event"
+      response_time_minutes: 1440
+      escalation: "within_24_hours"
+
+  # Incident handling
+  handling:
+    auto_create_ticket: true
+    notify_security_team: true
+    preserve_evidence: true
+    isolate_affected_systems: true
+
+  # Breach notification
+  breach_notification:
+    enabled: true
+    notify_affected_users: true
+    notification_within_hours: 72
+    notify_authorities: true
+    document_breach: true
+
+  # Post-incident
+  post_incident:
+    conduct_review: true
+    update_procedures: true
+    provide_training: true
+    document_lessons_learned: true
+
+# ===================================================================
+# 9. COMPLIANCE POLICIES
+# ===================================================================
+compliance:
+  # GDPR
+  gdpr:
+    enabled: true
+    data_controller: "Sergas Corporation"
+    dpo_email: "dpo@example.com"
+
+    rights_management:
+      right_to_access: true
+      right_to_rectification: true
+      right_to_erasure: true
+      right_to_portability: true
+      right_to_restriction: true
+      right_to_object: true
+
+    processing_purposes:
+      - "Account management"
+      - "Customer relationship management"
+      - "Business analytics"
+
+  # CCPA
+  ccpa:
+    enabled: true
+    provide_notice: true
+    opt_out_mechanism: true
+    do_not_sell: true
+
+  # SOC 2
+  soc2:
+    enabled: true
+    trust_services_criteria:
+      - "security"
+      - "availability"
+      - "confidentiality"
+    annual_audit: true
+
+  # Other standards
+  standards:
+    - name: "ISO 27001"
+      enabled: false
+    - name: "PCI DSS"
+      enabled: false
+    - name: "HIPAA"
+      enabled: false
+
+# ===================================================================
+# 10. VULNERABILITY MANAGEMENT POLICIES
+# ===================================================================
+vulnerability_management:
+  # Scanning
+  scanning:
+    enabled: true
+    scan_frequency_days: 7
+
+    tools:
+      - name: "bandit"
+        enabled: true
+        severity_threshold: "MEDIUM"
+
+      - name: "safety"
+        enabled: true
+        auto_update: true
+
+      - name: "dependabot"
+        enabled: true
+        auto_merge_minor: false
+
+  # Patching
+  patching:
+    critical_patch_sla_hours: 24
+    high_patch_sla_days: 7
+    medium_patch_sla_days: 30
+    low_patch_sla_days: 90
+
+  # Dependency management
+  dependencies:
+    auto_update_security_patches: true
+    review_before_update: true
+    test_before_deploy: true
+    maintain_bill_of_materials: true
+
+# ===================================================================
+# END OF SECURITY POLICIES
+# ===================================================================

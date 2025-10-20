@@ -1,0 +1,255 @@
+{
+  "dashboard": {
+    "title": "Business Metrics Dashboard",
+    "tags": ["sergas", "business", "kpi"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Accounts",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(sergas_accounts_active_total)",
+            "legendFormat": "Total Active"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "orientation": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "blue"},
+                {"value": 100, "color": "green"},
+                {"value": 1000, "color": "yellow"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Recommendations Generated (24h)",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(increase(sergas_recommendations_generated_total[24h]))",
+            "legendFormat": "Recommendations"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Recommendation Acceptance Rate",
+        "type": "gauge",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(increase(sergas_recommendations_accepted_total[24h])) / sum(increase(sergas_recommendations_generated_total[24h])) * 100",
+            "legendFormat": "Acceptance %"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 30, "color": "yellow"},
+                {"value": 60, "color": "green"}
+              ]
+            },
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Cross-Sell Opportunities",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(increase(sergas_cross_sell_opportunities_identified_total[7d]))",
+            "legendFormat": "Opportunities"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Accounts Processed Over Time",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_accounts_processed_total[1h])",
+            "legendFormat": "{{operation}} - {{status}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Accounts/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Recommendations by Type",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_recommendations_generated_total[1h])",
+            "legendFormat": "{{recommendation_type}} - {{priority}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Recommendations/hr"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Recommendation Confidence Distribution",
+        "type": "heatmap",
+        "gridPos": {"x": 0, "y": 10, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "sum(rate(sergas_recommendation_confidence_score_bucket[5m])) by (le)",
+            "format": "heatmap",
+            "legendFormat": "{{le}}"
+          }
+        ],
+        "dataFormat": "tsbuckets"
+      },
+      {
+        "id": 8,
+        "title": "Cross-Sell by Product Category",
+        "type": "piechart",
+        "gridPos": {"x": 12, "y": 10, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "sum by(product_category) (increase(sergas_cross_sell_opportunities_identified_total[7d]))",
+            "legendFormat": "{{product_category}}"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Upsell Opportunities by Tier",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "increase(sergas_upsell_opportunities_identified_total[24h])",
+            "legendFormat": "{{current_tier}} → {{target_tier}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Opportunities"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Recommendation Generation Time",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sergas_recommendation_generation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 - {{recommendation_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Top Rejected Recommendation Reasons",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 22, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "topk(10, sum by(recommendation_type, reason) (increase(sergas_recommendations_rejected_total[7d])))",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "renameByName": {
+                "recommendation_type": "Type",
+                "reason": "Reason",
+                "Value": "Count"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Account Enrichment Performance",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 22, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sergas_account_enrichment_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 enrichment time"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(sergas_account_enrichment_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 enrichment time"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "dashboard": {
+    "title": "Agent Performance Dashboard",
+    "tags": ["sergas", "agents", "performance"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-3h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Agent Task Execution Time (p95)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sergas_agent_task_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{agent_type}} - {{task_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Agent Task Success Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "(rate(sergas_agent_task_attempts_total[5m]) - rate(sergas_agent_task_failures_total[5m])) / rate(sergas_agent_task_attempts_total[5m]) * 100",
+            "legendFormat": "{{agent_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Success %", "min": 0, "max": 100},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Agent Queue Size",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 6, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "sergas_agent_queue_size",
+            "legendFormat": "{{agent_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Queue Size"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [1000], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "15m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "name": "Agent Queue Backlog Alert"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Concurrent Agent Tasks",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 6, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "sergas_agent_concurrent_tasks",
+            "legendFormat": "{{agent_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Tasks"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Agent Task Failures by Type",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_agent_task_failures_total[5m])",
+            "legendFormat": "{{agent_type}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Failures/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Agent Task Retry Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_agent_task_retries_total[5m])",
+            "legendFormat": "{{agent_type}} - {{task_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Retries/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Agent Task Throughput",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 18, "w": 24, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_agent_task_attempts_total[5m])",
+            "legendFormat": "{{agent_type}} - {{task_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Tasks/sec"},
+          {"format": "short"}
+        ]
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "dashboard": {
+    "title": "Zoho Sync Pipeline Dashboard",
+    "tags": ["sergas", "zoho", "sync"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Zoho API Call Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_zoho_api_calls_total[5m])",
+            "legendFormat": "{{operation}} - {{status}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Calls/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Zoho API Latency",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sergas_zoho_api_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 - {{operation}}"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(sergas_zoho_api_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99 - {{operation}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Latency"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Zoho Rate Limit Status",
+        "type": "gauge",
+        "gridPos": {"x": 0, "y": 6, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "sergas_zoho_rate_limit_remaining{api_type=\"crm\"}",
+            "legendFormat": "Remaining"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1000, "color": "yellow"},
+                {"value": 5000, "color": "green"}
+              ]
+            },
+            "max": 10000,
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Accounts Synced (Last Hour)",
+        "type": "stat",
+        "gridPos": {"x": 8, "y": 6, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "increase(sergas_zoho_accounts_synced_total[1h])",
+            "legendFormat": "{{sync_type}}"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Sync Failure Rate",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 6, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(sergas_zoho_sync_failures_total[5m])",
+            "legendFormat": "{{sync_type}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Failures/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Account Sync Lag",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "sergas_account_sync_lag_seconds",
+            "legendFormat": "{{sync_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Lag Time"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [3600], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "10m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "name": "Sync Lag Alert"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Account Processing Time",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sergas_account_enrichment_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 enrichment time"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Rate Limit Exceeded Events",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 18, "w": 24, "h": 6},
+        "targets": [
+          {
+            "expr": "increase(sergas_zoho_rate_limit_exceeded_total[5m])",
+            "legendFormat": "{{api_type}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Events"},
+          {"format": "short"}
+        ]
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}
