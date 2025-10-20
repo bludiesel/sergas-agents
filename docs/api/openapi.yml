@@ -1,0 +1,436 @@
+openapi: 3.0.3
+info:
+  title: Sergas Super Account Manager API
+  version: 1.0.0
+  description: |
+    AI-powered account management automation system with multi-agent orchestration.
+
+    This API provides endpoints for:
+    - Real-time agent execution with SSE streaming
+    - AG UI Protocol event streaming
+    - Approval workflow management
+    - Account analysis and recommendations
+
+  contact:
+    name: Sergas Engineering Team
+    email: support@sergas.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api-staging.sergas.com
+    description: Staging environment
+  - url: https://api.sergas.com
+    description: Production environment
+
+tags:
+  - name: CopilotKit
+    description: CopilotKit UI integration endpoints with AG UI Protocol
+  - name: Approval
+    description: Human-in-the-loop approval workflow
+  - name: Health
+    description: Service health and status checks
+
+paths:
+  /copilotkit:
+    post:
+      tags:
+        - CopilotKit
+      summary: Execute agent workflow with SSE streaming
+      description: |
+        Main endpoint for CopilotKit UI integration. Accepts user input and streams
+        AG UI Protocol events via Server-Sent Events (SSE).
+
+        **Event Flow:**
+        1. RUN_STARTED - Session initialization
+        2. TEXT_MESSAGE_START/CONTENT/END - Agent responses
+        3. TOOL_CALL_START/ARGS/RESULT - Tool executions
+        4. STATE_SNAPSHOT/DELTA - State synchronization
+        5. APPROVAL_REQUEST (custom) - Requires user approval
+        6. RUN_FINISHED/ERROR - Completion status
+
+      operationId: executeCopilotKitAgent
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunAgentInput'
+            example:
+              thread_id: "thread-123-abc"
+              run_id: "run-456-def"
+              messages:
+                - role: user
+                  content: "Analyze account ACC-001"
+              state:
+                account_id: "ACC-001"
+                user_preferences: {}
+
+      responses:
+        '200':
+          description: SSE stream of AG UI Protocol events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream with AG UI events
+              examples:
+                run_started:
+                  value: |
+                    data: {"type":"RUN_STARTED","thread_id":"thread-123","run_id":"run-456","timestamp":"2025-10-19T10:00:00Z"}
+
+                text_message:
+                  value: |
+                    data: {"type":"TEXT_MESSAGE_START","message_id":"msg-1","run_id":"run-456"}
+
+                    data: {"type":"TEXT_MESSAGE_CONTENT","message_id":"msg-1","content":"Retrieving account data..."}
+
+                    data: {"type":"TEXT_MESSAGE_END","message_id":"msg-1"}
+
+                tool_call:
+                  value: |
+                    data: {"type":"TOOL_CALL_START","tool_call_id":"tc-1","tool_name":"zoho_get_account"}
+
+                    data: {"type":"TOOL_CALL_ARGS","tool_call_id":"tc-1","args":{"account_id":"ACC-001"}}
+
+                    data: {"type":"TOOL_CALL_RESULT","tool_call_id":"tc-1","result":{"name":"Acme Corp","status":"Active"}}
+
+                approval_request:
+                  value: |
+                    data: {"type":"CUSTOM","event_type":"APPROVAL_REQUEST","run_id":"run-456","data":{"recommendations":[{"action":"update_status","field":"Account_Status","value":"Hot Lead","confidence":0.85}],"timeout":300}}
+
+                run_finished:
+                  value: |
+                    data: {"type":"RUN_FINISHED","run_id":"run-456","final_output":{"status":"success","account_id":"ACC-001","recommendations":3,"crm_updated":true}}
+
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid input"
+                details: "thread_id is required"
+
+        '401':
+          description: Unauthorized - invalid or missing authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+      security:
+        - bearerAuth: []
+
+  /approval/respond:
+    post:
+      tags:
+        - Approval
+      summary: Respond to approval request
+      description: |
+        Submit user approval or rejection for pending recommendations.
+
+        This endpoint is called from the frontend when a user approves or rejects
+        recommendations that require human-in-the-loop validation.
+
+      operationId: respondToApproval
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalResponse'
+            examples:
+              approved:
+                summary: Approve recommendations
+                value:
+                  run_id: "run-456-def"
+                  approved: true
+                  reason: "Recommendations look good"
+              rejected:
+                summary: Reject recommendations
+                value:
+                  run_id: "run-456-def"
+                  approved: false
+                  reason: "Need more context before updating CRM"
+              modified:
+                summary: Approve with modifications
+                value:
+                  run_id: "run-456-def"
+                  approved: true
+                  modified_data:
+                    recommendations:
+                      - action: update_status
+                        field: Account_Status
+                        value: "Warm Lead"
+                  reason: "Changed status to Warm instead of Hot"
+
+      responses:
+        '200':
+          description: Approval response accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [accepted]
+                    description: Response processing status
+              example:
+                status: "accepted"
+
+        '404':
+          description: Run ID not found or approval already processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Approval not found"
+                details: "No pending approval for run_id: run-456-def"
+
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+      security:
+        - bearerAuth: []
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: |
+        Returns service health status including:
+        - API availability
+        - Database connectivity
+        - External service status (Zoho, Cognee)
+        - Active agent sessions
+
+      operationId: healthCheck
+
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: "healthy"
+                version: "1.0.0"
+                timestamp: "2025-10-19T10:00:00Z"
+                services:
+                  database: "connected"
+                  zoho_crm: "available"
+                  cognee: "available"
+                agents:
+                  active_sessions: 5
+                  total_agents: 4
+
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: "unhealthy"
+                version: "1.0.0"
+                timestamp: "2025-10-19T10:00:00Z"
+                services:
+                  database: "disconnected"
+                  zoho_crm: "timeout"
+                  cognee: "available"
+
+components:
+  schemas:
+    RunAgentInput:
+      type: object
+      required:
+        - thread_id
+        - run_id
+        - messages
+      properties:
+        thread_id:
+          type: string
+          description: Unique conversation thread identifier for session continuity
+          example: "thread-123-abc"
+        run_id:
+          type: string
+          description: Unique identifier for this specific agent execution
+          example: "run-456-def"
+        messages:
+          type: array
+          description: Conversation history
+          items:
+            $ref: '#/components/schemas/Message'
+        state:
+          type: object
+          description: Application state and context
+          additionalProperties: true
+          example:
+            account_id: "ACC-001"
+            user_id: "user-789"
+        tools:
+          type: array
+          description: Available tools for this run
+          items:
+            $ref: '#/components/schemas/ToolDefinition'
+        metadata:
+          type: object
+          description: Additional run metadata
+          additionalProperties: true
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+          description: Message sender role
+        content:
+          type: string
+          description: Message text content
+        message_id:
+          type: string
+          description: Optional unique message identifier
+      example:
+        role: user
+        content: "Analyze account ACC-001"
+
+    ToolDefinition:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          description: Tool identifier
+          example: "zoho_get_account"
+        description:
+          type: string
+          description: Tool purpose and usage
+          example: "Retrieve account details from Zoho CRM"
+        parameters:
+          type: object
+          description: JSON Schema for tool parameters
+          additionalProperties: true
+
+    ApprovalResponse:
+      type: object
+      required:
+        - run_id
+        - approved
+      properties:
+        run_id:
+          type: string
+          description: Run ID requiring approval
+          example: "run-456-def"
+        approved:
+          type: boolean
+          description: Whether recommendations are approved
+          example: true
+        modified_data:
+          type: object
+          description: Optional modifications to recommendations
+          additionalProperties: true
+        reason:
+          type: string
+          description: Optional explanation for approval/rejection
+          example: "Recommendations align with account strategy"
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+          description: Overall service health
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+        services:
+          type: object
+          description: External service status
+          properties:
+            database:
+              type: string
+              enum: [connected, disconnected, slow]
+            zoho_crm:
+              type: string
+              enum: [available, unavailable, timeout]
+            cognee:
+              type: string
+              enum: [available, unavailable, timeout]
+        agents:
+          type: object
+          description: Agent system metrics
+          properties:
+            active_sessions:
+              type: integer
+              description: Number of active agent sessions
+            total_agents:
+              type: integer
+              description: Total registered agents
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error context
+        code:
+          type: string
+          description: Error code for programmatic handling
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT bearer token authentication.
+
+        **Obtaining a token:**
+        1. Authenticate with your credentials
+        2. Receive JWT token
+        3. Include in Authorization header: `Bearer <token>`
+
+        **Token expiration:** 1 hour
+        **Refresh:** Use refresh token endpoint
+
+security:
+  - bearerAuth: []

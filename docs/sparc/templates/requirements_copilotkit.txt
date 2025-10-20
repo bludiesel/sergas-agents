@@ -1,0 +1,28 @@
+# CopilotKit Integration - Additional Python Dependencies
+# Add these to your existing requirements.txt
+
+# ===================================
+# CopilotKit Python SDK
+# ===================================
+copilotkit>=1.1.0  # CopilotKit Python SDK for backend integration
+
+# ===================================
+# LangGraph & LangChain (Required by CopilotKit)
+# ===================================
+langgraph>=0.2.0  # For building agentic workflows
+langchain>=0.3.0  # Core LangChain framework
+langchain-core>=0.3.0  # LangChain core abstractions
+langchain-anthropic>=0.3.0  # Claude integration for LangChain
+
+# ===================================
+# Additional Dependencies
+# ===================================
+# FastAPI for server-sent events (already in requirements.txt)
+sse-starlette>=1.6.5  # For SSE support
+
+# Note: The following are already in your requirements.txt:
+# - fastapi>=0.104.1
+# - uvicorn[standard]>=0.24.0
+# - anthropic>=0.30.0 (via claude-agent-sdk)
+# - pydantic>=2.5.0
+# - structlog>=23.2.0
