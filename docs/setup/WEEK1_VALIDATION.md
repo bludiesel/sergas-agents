@@ -1,20 +1,20 @@
 # Week 1 Validation Report
 
-**Generated**: 2025-10-18 02:15:54
-**Duration**: 1.53 seconds
+**Generated**: 2025-10-19 20:37:28
+**Duration**: 0.12 seconds
 
 ---
 
-## Overall Status: ✅ ✅ PASSED - Week 1 Complete
+## Overall Status: ❌ ❌ FAILED - Issues Detected
 
 ## Test Results Summary
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 29 |
-| Passed | 29 |
-| Failed | 0 |
-| Pass Rate | 100.0% |
+| Total Tests | 18 |
+| Passed | 17 |
+| Failed | 1 |
+| Pass Rate | 94.4% |
 
 ## Validation Checklist
 
@@ -62,7 +62,12 @@
 
 ## Recommendations
 
-### All Clear
+### ⚠️ Issues to Address
+
+1 test(s) failed. Review detailed output:
+```bash
+pytest tests/ -v --tb=short
+```
 
 
 ### For Week 2 Success
@@ -93,4 +98,4 @@ pytest tests/ --cov=src --cov-report=html
 
 ---
 
-**Week 1 Status**: ✅ Complete and validated - Ready for Week 2
+**Week 1 Status**: ⚠️ Needs attention before proceeding
