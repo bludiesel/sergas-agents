@@ -1,6 +1,6 @@
 # Sergas Super Account Manager - Python Dependencies
 # Generated: 2025-10-18
-# Python Version: 3.14+
+# Python Version: 3.13+
 
 # ===================================
 # Core Framework
@@ -127,8 +127,12 @@ apscheduler>=3.10.0  # For memory sync scheduling
 python-dotenv>=1.0.0
 click>=8.1.7
 tenacity>=8.2.3  # Retry logic
-dateutil>=2.8.2
+python-dateutil>=2.8.2
 pytz>=2023.3
+
+# CLI dependencies
+rich>=13.7.0  # Rich terminal UI
+httpx>=0.25.0  # Already listed above for API client
 
 # ===================================
 # Development Tools
@@ -142,3 +146,30 @@ pre-commit>=3.5.0
 # ===================================
 mkdocs>=1.5.3
 mkdocs-material>=9.4.14
+
+# ===================================
+# AG UI Protocol Support
+# ===================================
+ag-ui-protocol>=0.1.0
+sse-starlette>=1.6.5
+
+# ===================================
+# CopilotKit Integration
+# ===================================
+copilotkit>=0.1.39  # CopilotKit Python SDK for backend integration
+
+# LangGraph & LangChain (Required by CopilotKit)
+langgraph>=0.5.0,<0.6.0  # For building agentic workflows (0.5.4 compatible with copilotkit)
+langgraph-sdk>=0.1.32,<0.2.0  # LangGraph SDK (required by copilotkit)
+langgraph-checkpoint>=2.1.0  # LangGraph checkpointing
+langgraph-prebuilt>=0.5.0  # Pre-built LangGraph components
+langchain>=0.3.0  # Core LangChain framework
+langchain-core>=0.3.0  # LangChain core abstractions
+langchain-anthropic>=0.3.0  # Claude integration for LangChain
+langchain-openai>=0.3.0  # OpenAI integration (required by copilotkit)
+
+# Note: Use direct LangChain/LangGraph imports for CopilotKit integration
+# due to version compatibility. All functionality available through:
+# - langchain_anthropic.ChatAnthropic
+# - langgraph.graph.StateGraph
+# - langchain_core.messages

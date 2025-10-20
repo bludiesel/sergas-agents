@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.14"
+python = "^3.13"
 claude-agent-sdk = "^1.0.0"
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
@@ -89,7 +89,7 @@ max-line-length = 100
 disable = ["C0111", "C0103"]
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.13"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

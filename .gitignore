@@ -31,6 +31,7 @@ MANIFEST
 # Virtual Environments
 # ===================================
 venv/
+venv*/
 env/
 ENV/
 env.bak/
@@ -53,6 +54,7 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+.env.claude-code  # Claude Code specific config (may contain local settings)
 *.pem
 *.key
 credentials.json
@@ -158,8 +160,37 @@ hive-mind-prompt-*.txt
 # ===================================
 # Keep example files
 !.env.example
+!.env.local.example
+!.env.claude-code.example
 !config/environments/example.yaml
 
 # Ignore generated files
 audit-logs/*.json
 performance-reports/*.html
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+.claude-flow/
+memory/
+coordination/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
