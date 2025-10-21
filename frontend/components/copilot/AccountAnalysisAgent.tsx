@@ -89,7 +89,10 @@ interface AgentStatus {
 
 interface AccountAnalysisAgentProps {
   runtimeUrl: string;
-  onApprovalRequired?: (request: any) => void;
+  onApprovalRequired?: (request: {
+    run_id: string;
+    recommendations: unknown[];
+  }) => void;
 }
 
 export function AccountAnalysisAgent({
@@ -152,10 +155,15 @@ export function AccountAnalysisAgent({
    */
   const handleAnalyzeAccount = useCallback(
     async (accountId: string): Promise<AnalysisResult> => {
+      // Validate input
+      if (!accountId || accountId.trim() === '') {
+        throw new Error('Account ID is required');
+      }
+
       setIsAnalyzing(true);
       setError(null);
 
-      // Update agent statuses
+      // Reset and update agent statuses
       setAgentStatus({
         'zoho-data-scout': 'running',
         'memory-analyst': 'idle',
@@ -163,40 +171,65 @@ export function AccountAnalysisAgent({
       });
 
       try {
-        // Call orchestrator endpoint
+        // Add timeout configuration
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        // Call orchestrator endpoint with better error handling
         const response = await fetch(`${runtimeUrl}/orchestrator/analyze`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({
-            account_id: accountId,
+            account_id: accountId.trim(),
             include_recommendations: true,
             hitl_enabled: true,
+            request_timestamp: new Date().toISOString(),
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
+
+        // Handle different HTTP status codes
         if (!response.ok) {
-          throw new Error(`Analysis failed: ${response.statusText}`);
+          const errorText = await response.text();
+          let errorMessage = `Analysis failed: ${response.statusText}`;
+
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            errorMessage = `Analysis failed: ${response.statusText} - ${errorText}`;
+          }
+
+          throw new Error(errorMessage);
         }
 
+        // Validate response data
         const result: AnalysisResult = await response.json();
 
-        // Update statuses as agents complete
+        if (!result || !result.account_snapshot) {
+          throw new Error('Invalid analysis response received from server');
+        }
+
+        // Update statuses as agents complete with more realistic timing
         setAgentStatus({
           'zoho-data-scout': 'completed',
           'memory-analyst': 'running',
           'recommendation-author': 'idle',
         });
 
-        // Simulate memory analyst completion
+        // Simulate memory analyst completion with variable timing
         setTimeout(() => {
           setAgentStatus((prev) => ({
             ...prev,
             'memory-analyst': 'completed',
             'recommendation-author': 'running',
           }));
-        }, 1000);
+        }, 800 + Math.random() * 1200);
 
         // Simulate recommendation author completion
         setTimeout(() => {
@@ -204,14 +237,16 @@ export function AccountAnalysisAgent({
             ...prev,
             'recommendation-author': 'completed',
           }));
-        }, 2000);
+        }, 1500 + Math.random() * 2000);
 
         setAnalysisResult(result);
         setIsAnalyzing(false);
 
         return result;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Account analysis failed:', err);
+
         setError(errorMessage);
         setAgentStatus({
           'zoho-data-scout': 'error',
@@ -219,6 +254,8 @@ export function AccountAnalysisAgent({
           'recommendation-author': 'error',
         });
         setIsAnalyzing(false);
+
+        // Re-throw for calling components to handle
         throw err;
       }
     },
@@ -230,17 +267,52 @@ export function AccountAnalysisAgent({
    */
   const handleFetchAccountData = useCallback(
     async (accountId: string): Promise<AccountSnapshot> => {
+      // Validate input
+      if (!accountId || accountId.trim() === '') {
+        throw new Error('Account ID is required');
+      }
+
       try {
-        const response = await fetch(`${runtimeUrl}/zoho-scout/snapshot/${accountId}`);
+        // Add timeout for fetch operations
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+        const response = await fetch(`${runtimeUrl}/zoho-scout/snapshot/${accountId.trim()}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch account data: ${response.statusText}`);
+          const errorText = await response.text();
+          let errorMessage = `Failed to fetch account data: ${response.statusText}`;
+
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            errorMessage = `Failed to fetch account data: ${response.statusText} - ${errorText}`;
+          }
+
+          throw new Error(errorMessage);
         }
 
         const snapshot: AccountSnapshot = await response.json();
+
+        // Validate response data
+        if (!snapshot || !snapshot.account_id) {
+          throw new Error('Invalid account snapshot received from server');
+        }
+
         return snapshot;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Failed to fetch account data:', err);
         setError(errorMessage);
         throw err;
       }
@@ -253,35 +325,69 @@ export function AccountAnalysisAgent({
    */
   const handleGetRecommendations = useCallback(
     async (accountId: string): Promise<Recommendation[]> => {
+      // Validate input
+      if (!accountId || accountId.trim() === '') {
+        throw new Error('Account ID is required');
+      }
+
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
         const response = await fetch(`${runtimeUrl}/recommendation-author/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({
-            account_id: accountId,
+            account_id: accountId.trim(),
             require_approval: true,
+            request_timestamp: new Date().toISOString(),
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-          throw new Error(`Failed to generate recommendations: ${response.statusText}`);
+          const errorText = await response.text();
+          let errorMessage = `Failed to generate recommendations: ${response.statusText}`;
+
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            errorMessage = `Failed to generate recommendations: ${response.statusText} - ${errorText}`;
+          }
+
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
 
+        // Validate response data
+        if (!data || !Array.isArray(data.recommendations)) {
+          throw new Error('Invalid recommendations data received from server');
+        }
+
         // Trigger HITL approval workflow if callback provided
-        if (onApprovalRequired && data.requires_approval) {
-          onApprovalRequired({
-            run_id: data.run_id,
-            recommendations: data.recommendations,
-          });
+        if (onApprovalRequired && data.requires_approval && data.run_id) {
+          try {
+            onApprovalRequired({
+              run_id: data.run_id,
+              recommendations: data.recommendations,
+            });
+          } catch (approvalError) {
+            console.error('Approval callback failed:', approvalError);
+            // Don't throw error here, just log it
+          }
         }
 
         return data.recommendations;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error('Failed to generate recommendations:', err);
         setError(errorMessage);
         throw err;
       }
@@ -312,26 +418,71 @@ export function AccountAnalysisAgent({
     handler: async ({ accountId }) => {
       console.log('[CopilotKit Action] analyzeAccount called:', accountId);
 
+      // Validate input
+      if (!accountId || typeof accountId !== 'string') {
+        return {
+          success: false,
+          message: 'Valid account ID is required for analysis',
+          error: 'INVALID_ACCOUNT_ID',
+        };
+      }
+
       try {
+        // Show loading state via the component's isAnalyzing state
+        // The handleAnalyzeAccount function already manages this
         const result = await handleAnalyzeAccount(accountId);
 
         return {
           success: true,
-          message: `Successfully analyzed account ${accountId}`,
+          message: `Successfully analyzed account ${result.account_snapshot.account_name}`,
           data: {
             account_name: result.account_snapshot.account_name,
             risk_level: result.account_snapshot.risk_level,
             priority_score: result.account_snapshot.priority_score,
             risk_signals_count: result.risk_signals.length,
             recommendations_count: result.recommendations.length,
+            analysis_timestamp: result.timestamp,
+            run_id: result.run_id,
           },
           full_result: result,
+          metadata: {
+            action: 'analyzeAccount',
+            timestamp: new Date().toISOString(),
+            duration: Date.now() - new Date(result.timestamp).getTime(),
+          }
         };
       } catch (error) {
         console.error('[CopilotKit Action] analyzeAccount error:', error);
+
+        // Handle different error types
+        let errorMessage = 'Failed to analyze account';
+        let errorCode = 'ANALYSIS_FAILED';
+
+        if (error instanceof Error) {
+          if (error.message.includes('Account ID is required')) {
+            errorMessage = 'Account ID is required for analysis';
+            errorCode = 'MISSING_ACCOUNT_ID';
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Analysis request timed out. Please try again.';
+            errorCode = 'TIMEOUT';
+          } else if (error.message.includes('network')) {
+            errorMessage = 'Network error occurred. Please check your connection.';
+            errorCode = 'NETWORK_ERROR';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
         return {
           success: false,
-          message: `Failed to analyze account: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: errorMessage,
+          error: errorCode,
+          details: error instanceof Error ? error.stack : 'Unknown error details',
+          metadata: {
+            action: 'analyzeAccount',
+            timestamp: new Date().toISOString(),
+            account_id: accountId,
+          }
         };
       }
     },
@@ -355,19 +506,70 @@ export function AccountAnalysisAgent({
     handler: async ({ accountId }) => {
       console.log('[CopilotKit Action] fetchAccountData called:', accountId);
 
+      // Validate input
+      if (!accountId || typeof accountId !== 'string') {
+        return {
+          success: false,
+          message: 'Valid account ID is required',
+          error: 'INVALID_ACCOUNT_ID',
+        };
+      }
+
       try {
         const snapshot = await handleFetchAccountData(accountId);
 
         return {
           success: true,
           message: `Retrieved snapshot for ${snapshot.account_name}`,
-          snapshot,
+          data: {
+            account_id: snapshot.account_id,
+            account_name: snapshot.account_name,
+            owner_name: snapshot.owner_name,
+            status: snapshot.status,
+            risk_level: snapshot.risk_level,
+            priority_score: snapshot.priority_score,
+            deal_count: snapshot.deal_count,
+            total_value: snapshot.total_value,
+            engagement_score: snapshot.engagement_score,
+            needs_review: snapshot.needs_review,
+          },
+          full_snapshot: snapshot,
+          metadata: {
+            action: 'fetchAccountData',
+            timestamp: new Date().toISOString(),
+          }
         };
       } catch (error) {
         console.error('[CopilotKit Action] fetchAccountData error:', error);
+
+        let errorMessage = 'Failed to fetch account data';
+        let errorCode = 'FETCH_FAILED';
+
+        if (error instanceof Error) {
+          if (error.message.includes('Account ID is required')) {
+            errorMessage = 'Account ID is required';
+            errorCode = 'MISSING_ACCOUNT_ID';
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+            errorCode = 'TIMEOUT';
+          } else if (error.message.includes('network')) {
+            errorMessage = 'Network error occurred. Please check your connection.';
+            errorCode = 'NETWORK_ERROR';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
         return {
           success: false,
-          message: `Failed to fetch account data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: errorMessage,
+          error: errorCode,
+          details: error instanceof Error ? error.stack : 'Unknown error details',
+          metadata: {
+            action: 'fetchAccountData',
+            timestamp: new Date().toISOString(),
+            account_id: accountId,
+          }
         };
       }
     },
@@ -392,20 +594,83 @@ export function AccountAnalysisAgent({
     handler: async ({ accountId }) => {
       console.log('[CopilotKit Action] getRecommendations called:', accountId);
 
+      // Validate input
+      if (!accountId || typeof accountId !== 'string') {
+        return {
+          success: false,
+          message: 'Valid account ID is required',
+          error: 'INVALID_ACCOUNT_ID',
+        };
+      }
+
       try {
         const recommendations = await handleGetRecommendations(accountId);
+
+        // Calculate recommendation statistics
+        const priorityCounts = recommendations.reduce((acc, rec) => {
+          acc[rec.priority] = (acc[rec.priority] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const avgConfidence = recommendations.reduce((sum, rec) => sum + rec.confidence_score, 0) / recommendations.length;
 
         return {
           success: true,
           message: `Generated ${recommendations.length} recommendations for account ${accountId}`,
-          recommendations,
+          data: {
+            recommendations_count: recommendations.length,
+            recommendations: recommendations.map(rec => ({
+              recommendation_id: rec.recommendation_id,
+              category: rec.category,
+              title: rec.title,
+              description: rec.description,
+              priority: rec.priority,
+              confidence_score: rec.confidence_score,
+              next_steps: rec.next_steps,
+            })),
+            priority_distribution: priorityCounts,
+            average_confidence: Math.round(avgConfidence),
+            categories: [...new Set(recommendations.map(rec => rec.category))],
+          },
+          full_recommendations: recommendations,
           requires_approval: true,
+          metadata: {
+            action: 'getRecommendations',
+            timestamp: new Date().toISOString(),
+            account_id: accountId,
+          }
         };
       } catch (error) {
         console.error('[CopilotKit Action] getRecommendations error:', error);
+
+        let errorMessage = 'Failed to generate recommendations';
+        let errorCode = 'RECOMMENDATION_FAILED';
+
+        if (error instanceof Error) {
+          if (error.message.includes('Account ID is required')) {
+            errorMessage = 'Account ID is required';
+            errorCode = 'MISSING_ACCOUNT_ID';
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+            errorCode = 'TIMEOUT';
+          } else if (error.message.includes('network')) {
+            errorMessage = 'Network error occurred. Please check your connection.';
+            errorCode = 'NETWORK_ERROR';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
         return {
           success: false,
-          message: `Failed to generate recommendations: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: errorMessage,
+          error: errorCode,
+          details: error instanceof Error ? error.stack : 'Unknown error details',
+          metadata: {
+            action: 'getRecommendations',
+            timestamp: new Date().toISOString(),
+            account_id: accountId,
+          }
         };
       }
     },

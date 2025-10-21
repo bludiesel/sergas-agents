@@ -56,6 +56,13 @@ export default function Home() {
     setApprovalRequest(null);
   };
 
+  const handleApprovalRequired = (request: { run_id: string; recommendations: unknown[] }) => {
+    setApprovalRequest({
+      run_id: request.run_id,
+      recommendations: request.recommendations as ApprovalRequest['recommendations'],
+    });
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
         {/* Main Content Area */}
@@ -97,7 +104,7 @@ export default function Home() {
             {activeView === 'analysis' ? (
               <AccountAnalysisAgent
                 runtimeUrl={runtimeUrl}
-                onApprovalRequired={setApprovalRequest}
+                onApprovalRequired={handleApprovalRequired}
               />
             ) : (
               <CoAgentDashboard runtimeUrl={runtimeUrl} />

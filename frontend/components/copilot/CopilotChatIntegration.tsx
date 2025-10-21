@@ -32,8 +32,8 @@ interface ChatMessage {
 
 interface ToolCall {
   tool: string;
-  parameters: Record<string, any>;
-  result?: any;
+  parameters: Record<string, unknown>;
+  result?: unknown;
   status: 'pending' | 'running' | 'completed' | 'failed';
   startTime?: Date;
   endTime?: Date;
@@ -43,13 +43,10 @@ interface ToolCall {
 // Chat Integration Component
 // ============================================================================
 
-interface CopilotChatIntegrationProps {
-  onToolCall?: (toolCall: ToolCall) => void;
-}
-
-export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationProps) {
+export function CopilotChatIntegration() {
   const [inputMessage, setInputMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // ========================================================================
@@ -58,10 +55,19 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
 
   const {
     isLoading,
-    sendMessage,
-    stopGeneration,
+    visibleMessages,
+    appendMessage,
+    setMessages,
+    deleteMessage,
     reloadMessages,
-  } = useCopilotChat();
+  } = useCopilotChat({
+    // Additional configuration for better chat handling
+    instructions: "You are an AI assistant for account analysis and management. Help users analyze accounts, understand risk signals, and provide actionable recommendations based on the available data.",
+    labels: {
+      initial: "Start a conversation about account analysis",
+      placeholder: "Ask about accounts, risk analysis, or recommendations...",
+    }
+  });
 
   // Make chat history readable by agents
   useCopilotReadable({
@@ -76,6 +82,9 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
+    // Clear any existing errors
+    setError(null);
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -83,11 +92,47 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
       timestamp: new Date(),
     };
 
-    setChatHistory((prev) => [...prev, userMessage]);
-    setInputMessage('');
+    try {
+      // Clear input immediately for better UX
+      setInputMessage('');
 
-    // Send message through CopilotKit
-    await sendMessage(inputMessage);
+      // Append message to CopilotKit chat
+      await appendMessage(inputMessage);
+
+      // Update local chat history for immediate UI update
+      setChatHistory((prev) => [...prev, userMessage]);
+
+      // Add a temporary assistant message while processing
+      const processingMessage: ChatMessage = {
+        id: `assistant-processing-${Date.now()}`,
+        role: 'assistant',
+        content: 'Processing your request...',
+        timestamp: new Date(),
+      };
+
+      setChatHistory((prev) => [...prev, processingMessage]);
+
+    } catch (error) {
+      console.error('Failed to send message:', error);
+
+      // Add error message to chat history
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error sending your message. Please try again.',
+        timestamp: new Date(),
+        toolCalls: [{
+          tool: 'error_handler',
+          parameters: { error: error instanceof Error ? error.message : 'Unknown error' },
+          status: 'failed'
+        }]
+      };
+
+      setChatHistory((prev) => [...prev, errorMessage]);
+
+      // Restore input message for retry
+      setInputMessage(inputMessage);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -98,6 +143,41 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
   };
 
   // ========================================================================
+  // Sync with CopilotKit messages
+  // ========================================================================
+
+  useEffect(() => {
+    // Sync local chat history with CopilotKit's visible messages
+    if (visibleMessages && visibleMessages.length > 0) {
+      const copilotMessages: ChatMessage[] = visibleMessages.map((msg, idx) => ({
+        id: msg.id || `copilot-${idx}`,
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content || '',
+        timestamp: new Date(msg.createdAt || Date.now()),
+        toolCalls: msg.toolCalls?.map((tool: any) => ({
+          tool: tool.name,
+          parameters: tool.arguments || {},
+          result: tool.result,
+          status: tool.result ? 'completed' : 'pending'
+        }))
+      }));
+
+      // Update chat history, but keep user messages that might not be in visibleMessages yet
+      setChatHistory((prev) => {
+        const existingUserMessages = prev.filter(m => m.role === 'user');
+        const mergedMessages = [...existingUserMessages, ...copilotMessages];
+
+        // Remove duplicates and keep latest version of each message
+        const uniqueMessages = mergedMessages.filter((message, index, array) =>
+          array.findIndex(m => m.id === message.id) === index
+        );
+
+        return uniqueMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      });
+    }
+  }, [visibleMessages]);
+
+  // ========================================================================
   // Auto-scroll to bottom
   // ========================================================================
 
@@ -106,9 +186,23 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
   }, [chatHistory, isLoading]);
 
   // ========================================================================
-  // Note: Message syncing would happen via event listeners in production
-  // CopilotKit's useCopilotChat doesn't expose messages directly
+  // Message History Management
   // ========================================================================
+
+  const clearChatHistory = () => {
+    setChatHistory([]);
+    setMessages([]);
+  };
+
+  const retryLastMessage = () => {
+    const lastUserMessage = chatHistory
+      .filter(m => m.role === 'user')
+      .pop();
+
+    if (lastUserMessage) {
+      setInputMessage(lastUserMessage.content);
+    }
+  };
 
   // ========================================================================
   // UI Rendering
@@ -118,13 +212,34 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
     <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Chat Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-lg">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          Account Analysis Assistant
-        </h2>
-        <p className="text-sm text-blue-100 mt-1">
-          Ask me to analyze accounts, generate recommendations, or check risk signals
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              Account Analysis Assistant
+            </h2>
+            <p className="text-sm text-blue-100 mt-1">
+              Ask me to analyze accounts, generate recommendations, or check risk signals
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={retryLastMessage}
+              className="p-2 hover:bg-blue-500 rounded transition-colors"
+              title="Retry last message"
+              disabled={chatHistory.length === 0}
+            >
+              ↻
+            </button>
+            <button
+              onClick={clearChatHistory}
+              className="p-2 hover:bg-blue-500 rounded transition-colors"
+              title="Clear chat"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Chat Messages */}
@@ -163,34 +278,73 @@ export function CopilotChatIntegration({ onToolCall }: CopilotChatIntegrationPro
 
       {/* Chat Input */}
       <div className="border-t border-gray-200 p-4">
+        {/* Loading indicator for streaming responses */}
+        {isLoading && (
+          <div className="mb-3 flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" />
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-100" />
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-200" />
+            <span className="ml-2">AI is thinking...</span>
+          </div>
+        )}
+
+        {/* Error display for connection issues */}
+        {error && (
+          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+            <div className="flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-500 hover:text-red-700 ml-2"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask about an account or request analysis..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder={isLoading ? "Waiting for response..." : "Ask about an account or request analysis..."}
+            className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+              isLoading
+                ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
+                : 'border-gray-300 focus:ring-blue-500'
+            }`}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isLoading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              !inputMessage.trim() || isLoading
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            <Send className="h-4 w-4" />
-            Send
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Sending...</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                <span>Send</span>
+              </>
+            )}
           </button>
         </div>
 
-        {isLoading && (
-          <button
-            onClick={stopGeneration}
-            className="mt-2 text-sm text-red-600 hover:text-red-700"
-          >
-            Stop generating
-          </button>
-        )}
+        {/* Character count and send shortcut hint */}
+        <div className="mt-2 text-xs text-gray-500 flex justify-between">
+          <span>{inputMessage.length} characters</span>
+          <span>Press Enter to send, Shift+Enter for new line</span>
+        </div>
       </div>
     </div>
   );
@@ -276,14 +430,14 @@ function ToolCallDisplay({ toolCall }: ToolCallDisplayProps) {
         </div>
       )}
 
-      {toolCall.result && (
+      {toolCall.result ? (
         <div className="mt-1">
           <span className="font-medium">Result:</span>
           <div className="font-mono text-xs opacity-80 mt-0.5">
-            {JSON.stringify(toolCall.result, null, 2)}
+            {String(JSON.stringify(toolCall.result, null, 2))}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

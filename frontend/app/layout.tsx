@@ -29,7 +29,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <CopilotProvider agent="orchestrator">
+        <CopilotProvider agent="glm-agent">
           {children}
         </CopilotProvider>
       </body>
