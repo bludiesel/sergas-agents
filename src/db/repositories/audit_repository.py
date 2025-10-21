@@ -9,7 +9,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.audit import AuditEvent
-from src.db.models import AuditEventModel
+from src.db.models import AuditEvent as AuditEventModel
 
 
 class AuditRepository:
@@ -36,14 +36,17 @@ class AuditRepository:
         db_event = AuditEventModel(
             timestamp=event.timestamp,
             event_type=event.event_type,
-            agent_id=event.agent_id,
+            actor=event.agent_id,  # Map agent_id to actor field
             session_id=event.session_id,
-            tool_name=event.tool_name,
-            tool_input=event.tool_input,
-            tool_output=event.tool_output,
-            status=event.status,
-            error_message=event.error_message,
-            execution_time_ms=event.execution_time_ms,
+            action=f"tool_execution:{event.tool_name}" if event.tool_name else "unknown",
+            resource=event.tool_name,
+            event_metadata={
+                "tool_input": event.tool_input,
+                "tool_output": event.tool_output,
+                "status": event.status,
+                "error_message": event.error_message,
+                "execution_time_ms": event.execution_time_ms,
+            }
         )
 
         self.session.add(db_event)
@@ -77,7 +80,7 @@ class AuditRepository:
         if session_id:
             conditions.append(AuditEventModel.session_id == session_id)
         if agent_id:
-            conditions.append(AuditEventModel.agent_id == agent_id)
+            conditions.append(AuditEventModel.actor == agent_id)
         if start_time:
             conditions.append(AuditEventModel.timestamp >= start_time)
         if end_time:
@@ -98,14 +101,14 @@ class AuditRepository:
             AuditEvent(
                 timestamp=db_event.timestamp,
                 event_type=db_event.event_type,
-                agent_id=db_event.agent_id,
+                agent_id=db_event.actor,  # Map from actor to agent_id
                 session_id=db_event.session_id,
-                tool_name=db_event.tool_name,
-                tool_input=db_event.tool_input,
-                tool_output=db_event.tool_output,
-                status=db_event.status,
-                error_message=db_event.error_message,
-                execution_time_ms=db_event.execution_time_ms,
+                tool_name=db_event.resource,
+                tool_input=db_event.event_metadata.get("tool_input") if db_event.event_metadata else None,
+                tool_output=db_event.event_metadata.get("tool_output") if db_event.event_metadata else None,
+                status=db_event.event_metadata.get("status", "unknown") if db_event.event_metadata else "unknown",
+                error_message=db_event.event_metadata.get("error_message") if db_event.event_metadata else None,
+                execution_time_ms=db_event.event_metadata.get("execution_time_ms") if db_event.event_metadata else None,
             )
             for db_event in db_events
         ]

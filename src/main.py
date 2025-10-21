@@ -18,7 +18,7 @@ load_dotenv()
 # This allows .env to be managed by Claude Code while app uses GLM-4.6
 load_dotenv('.env.local', override=True)
 
-from src.api.routers.copilotkit_router import router as copilotkit_router
+from src.api.routers.copilotkit_router_enhanced import router as copilotkit_router
 from src.api.routers.approval_router import router as approval_router
 from src.copilotkit import setup_copilotkit_with_agents
 
