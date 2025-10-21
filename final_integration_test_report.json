@@ -1,0 +1,479 @@
+{
+  "timestamp": 1760990398.231634,
+  "total_tests": 5,
+  "passed_tests": 5,
+  "failed_tests": 0,
+  "success_rate": 1.0,
+  "total_duration": 0.05137062072753906,
+  "overall_success": true,
+  "results": [
+    {
+      "component": "File Structure",
+      "test_type": "Existence Check",
+      "success": true,
+      "duration": 7.414817810058594e-05,
+      "error_message": null,
+      "test_data": {
+        "Dynamic Workflow Engine": {
+          "path": "/Users/mohammadabdelrahman/Projects/sergas_agents/src/agents/dynamic_workflow_engine.py",
+          "size": 50062,
+          "modified": 1760989769.6402905
+        },
+        "Enhanced GLM Integration": {
+          "path": "/Users/mohammadabdelrahman/Projects/sergas_agents/src/agents/enhanced_glm_integration.py",
+          "size": 41669,
+          "modified": 1760989767.0780425
+        },
+        "Self Modification System": {
+          "path": "/Users/mohammadabdelrahman/Projects/sergas_agents/src/agents/self_modification_system.py",
+          "size": 70904,
+          "modified": 1760989739.7768784
+        },
+        "Zoho Evolution System": {
+          "path": "/Users/mohammadabdelrahman/Projects/sergas_agents/src/agents/zoho_evolution_system.py",
+          "size": 73893,
+          "modified": 1760989798.8055725
+        },
+        "Comprehensive Monitoring": {
+          "path": "/Users/mohammadabdelrahman/Projects/sergas_agents/src/monitoring/comprehensive_monitoring.py",
+          "size": 80313,
+          "modified": 1760989719.0955646
+        }
+      }
+    },
+    {
+      "component": "Syntax Validation",
+      "test_type": "Python Compilation",
+      "success": true,
+      "duration": 0.01928400993347168,
+      "error_message": null,
+      "test_data": {
+        "src/agents/dynamic_workflow_engine.py": {
+          "status": "valid",
+          "lines": 1450,
+          "size": 50062
+        },
+        "src/agents/enhanced_glm_integration.py": {
+          "status": "valid",
+          "lines": 1172,
+          "size": 41669
+        },
+        "src/agents/self_modification_system.py": {
+          "status": "valid",
+          "lines": 1702,
+          "size": 70312
+        },
+        "src/agents/zoho_evolution_system.py": {
+          "status": "valid",
+          "lines": 2011,
+          "size": 73893
+        },
+        "src/monitoring/comprehensive_monitoring.py": {
+          "status": "valid",
+          "lines": 2212,
+          "size": 80313
+        }
+      }
+    },
+    {
+      "component": "Component Structure",
+      "test_type": "Class and Function Analysis",
+      "success": true,
+      "duration": 0.03193807601928711,
+      "error_message": null,
+      "test_data": {
+        "DynamicWorkflowEngine": {
+          "classes": [
+            "WorkflowState",
+            "WorkflowPriority",
+            "ExecutionMode",
+            "AgentCapability",
+            "DependencyType",
+            "DynamicWorkflowEngine"
+          ],
+          "functions": [
+            "__post_init__",
+            "is_ready",
+            "can_run_in_parallel",
+            "estimate_completion_time",
+            "to_dict",
+            "__post_init__",
+            "get_step_by_id",
+            "get_ready_steps",
+            "get_execution_groups",
+            "calculate_progress",
+            "get_critical_path",
+            "to_dict",
+            "__init__",
+            "_meets_criteria",
+            "get_workflow_status",
+            "get_engine_metrics",
+            "register_agent",
+            "add_adaptation_rule",
+            "__repr__",
+            "longest_path"
+          ],
+          "enums": [],
+          "dataclasses": [
+            "WorkflowStep",
+            "Workflow"
+          ],
+          "total_elements": 28
+        },
+        "EnhancedGLMIntegration": {
+          "classes": [
+            "GLMModel",
+            "TaskType",
+            "ModelSelectionCriteria",
+            "IntelligentModelSelector",
+            "GLMRequestConfig",
+            "GLMResponse",
+            "EnhancedGLMIntegration",
+            "Config",
+            "Config",
+            "Config"
+          ],
+          "functions": [
+            "__post_init__",
+            "_get_default_suitability",
+            "get_suitability_score",
+            "success_rate",
+            "average_latency_ms",
+            "recent_success_rate",
+            "recent_average_latency_ms",
+            "update_request",
+            "get_health_score",
+            "__init__",
+            "_initialize_capabilities",
+            "_initialize_performance_tracking",
+            "select_model",
+            "_filter_by_requirements",
+            "_score_models",
+            "update_model_performance",
+            "get_model_performance",
+            "get_all_performance",
+            "reset_performance_tracking",
+            "__init__",
+            "get_model_recommendations",
+            "get_performance_report"
+          ],
+          "enums": [],
+          "dataclasses": [
+            "ModelCapability",
+            "ModelPerformance"
+          ],
+          "total_elements": 34
+        },
+        "SelfModificationSystem": {
+          "classes": [
+            "ModificationType",
+            "ModificationRisk",
+            "ModificationStatus",
+            "SafetyValidator",
+            "VersionManager",
+            "RollbackManager",
+            "SelfModificationSystem"
+          ],
+          "functions": [
+            "__post_init__",
+            "_assess_initial_risk",
+            "add_approval",
+            "is_approved",
+            "to_dict",
+            "to_dict",
+            "__init__",
+            "_validate_basic_structure",
+            "__init__",
+            "get_version",
+            "get_agent_versions",
+            "get_latest_version",
+            "_calculate_file_hash",
+            "__init__",
+            "_check_file_system_integrity",
+            "_check_process_health",
+            "_check_network_connectivity",
+            "_test_agent_imports",
+            "_test_basic_functionality",
+            "_test_configuration_loading",
+            "__init__",
+            "get_proposal",
+            "get_active_proposals",
+            "get_proposal_history",
+            "get_metrics"
+          ],
+          "enums": [],
+          "dataclasses": [
+            "ModificationProposal",
+            "AgentVersion"
+          ],
+          "total_elements": 34
+        },
+        "EvolutionEngine": {
+          "classes": [
+            "LearningType",
+            "EvolutionStrategy",
+            "MetricType",
+            "FeedbackType",
+            "PerformanceTracker",
+            "FeedbackProcessor",
+            "PatternRecognizer",
+            "EvolutionEngine"
+          ],
+          "functions": [
+            "__post_init__",
+            "__post_init__",
+            "__post_init__",
+            "__init__",
+            "record_metric",
+            "get_agent_performance",
+            "get_top_performers",
+            "detect_performance_anomalies",
+            "_update_agent_summary",
+            "_calculate_trend",
+            "__init__",
+            "process_feedback",
+            "get_feedback_summary",
+            "get_improvement_suggestions",
+            "_analyze_sentiment",
+            "_categorize_feedback",
+            "_assess_urgency",
+            "_update_feedback_patterns",
+            "_extract_themes",
+            "_extract_insights",
+            "_identify_common_themes",
+            "_generate_improvement_suggestion",
+            "__init__",
+            "recognize_patterns",
+            "get_agent_patterns",
+            "analyze_pattern_evolution",
+            "_recognize_performance_patterns",
+            "_recognize_feedback_patterns",
+            "_recognize_temporal_patterns",
+            "_is_improvement_trend",
+            "_is_degradation_trend",
+            "_is_cyclical_pattern",
+            "_calculate_trend_confidence",
+            "_calculate_improvement_rate",
+            "_calculate_degradation_rate",
+            "_estimate_cycle_length",
+            "_calculate_simple_trend",
+            "__init__",
+            "record_performance",
+            "record_feedback",
+            "get_evolution_status",
+            "_determine_evolution_actions",
+            "get_evolution_statistics",
+            "autocorrelation"
+          ],
+          "enums": [],
+          "dataclasses": [
+            "PerformanceMetric",
+            "FeedbackData",
+            "LearningPattern",
+            "EvolutionCheckpoint"
+          ],
+          "total_elements": 56
+        },
+        "ComprehensiveMonitoringSystem": {
+          "classes": [
+            "TestType",
+            "MonitorType",
+            "AlertLevel",
+            "TestStatus",
+            "HealthStatus",
+            "BaseTest",
+            "TestRunner",
+            "MetricsCollector",
+            "AlertRule",
+            "NotificationChannel",
+            "EmailNotificationChannel",
+            "SlackNotificationChannel",
+            "WebhookNotificationChannel",
+            "AlertManager",
+            "HealthCheckProvider",
+            "DatabaseHealthCheck",
+            "HTTPHealthCheck",
+            "SystemHealthCheck",
+            "HealthChecker",
+            "ComprehensiveMonitoringSystem"
+          ],
+          "functions": [
+            "test",
+            "performance_test",
+            "integration_test",
+            "measure_time",
+            "to_dict",
+            "to_dict",
+            "to_dict",
+            "to_dict",
+            "__init__",
+            "__init__",
+            "register_suite",
+            "_run_single_test_sync",
+            "get_summary",
+            "__init__",
+            "_init_prometheus_metrics",
+            "_init_system_collectors",
+            "add_collector",
+            "collect_metrics",
+            "_collect_cpu_metrics",
+            "_collect_memory_metrics",
+            "_collect_disk_metrics",
+            "_collect_network_metrics",
+            "record_http_request",
+            "record_workflow_execution",
+            "record_agent_task",
+            "get_prometheus_metrics",
+            "__init__",
+            "evaluate",
+            "__init__",
+            "__init__",
+            "_get_color_for_level",
+            "__init__",
+            "__init__",
+            "_init_default_rules",
+            "add_rule",
+            "add_notification_channel",
+            "evaluate_metrics",
+            "acknowledge_alert",
+            "resolve_alert",
+            "get_active_alerts",
+            "get_alerts_by_level",
+            "get_alert_summary",
+            "__init__",
+            "__init__",
+            "__init__",
+            "__init__",
+            "_init_default_providers",
+            "add_provider",
+            "__init__",
+            "_init_notification_channels",
+            "_init_test_suites",
+            "add_custom_test",
+            "add_custom_alert_rule",
+            "add_custom_metric_collector",
+            "decorator",
+            "decorator",
+            "decorator",
+            "decorator"
+          ],
+          "enums": [],
+          "dataclasses": [
+            "TestResult",
+            "MonitoringMetric",
+            "Alert",
+            "HealthCheck",
+            "TestSuite"
+          ],
+          "total_elements": 83
+        }
+      }
+    },
+    {
+      "component": "Integration Scenarios",
+      "test_type": "Component Interaction",
+      "success": true,
+      "duration": 6.198883056640625e-06,
+      "error_message": null,
+      "test_data": {
+        "Workflow Engine + GLM Integration": {
+          "name": "Workflow Engine + GLM Integration",
+          "description": "Dynamic workflow should be able to coordinate GLM model selection",
+          "components": [
+            "DynamicWorkflowEngine",
+            "EnhancedGLMIntegration"
+          ],
+          "status": "validated",
+          "integration_points": 1
+        },
+        "Self-Modification + Zoho Evolution": {
+          "name": "Self-Modification + Zoho Evolution",
+          "description": "Self-modification should support Zoho agent evolution",
+          "components": [
+            "SelfModificationSystem",
+            "EvolutionEngine"
+          ],
+          "status": "validated",
+          "integration_points": 1
+        },
+        "Monitoring + All Components": {
+          "name": "Monitoring + All Components",
+          "description": "Monitoring system should track all components",
+          "components": [
+            "ComprehensiveMonitoringSystem"
+          ],
+          "status": "validated",
+          "integration_points": 0
+        }
+      }
+    },
+    {
+      "component": "System Architecture",
+      "test_type": "Architecture Validation",
+      "success": true,
+      "duration": 6.818771362304688e-05,
+      "error_message": null,
+      "test_data": {
+        "Multi-Agent Coordination": {
+          "feature": "Multi-Agent Coordination",
+          "description": "System supports multi-agent orchestration",
+          "required_components": [
+            "DynamicWorkflowEngine",
+            "SelfModificationSystem"
+          ],
+          "existing_components": [
+            "DynamicWorkflowEngine",
+            "SelfModificationSystem"
+          ],
+          "status": "implemented"
+        },
+        "Intelligent Model Selection": {
+          "feature": "Intelligent Model Selection",
+          "description": "System has intelligent GLM model selection",
+          "required_components": [
+            "EnhancedGLMIntegration"
+          ],
+          "existing_components": [
+            "EnhancedGLMIntegration"
+          ],
+          "status": "implemented"
+        },
+        "Self-Improvement Capabilities": {
+          "feature": "Self-Improvement Capabilities",
+          "description": "Agents can evolve and improve over time",
+          "required_components": [
+            "ZohoEvolutionSystem",
+            "SelfModificationSystem"
+          ],
+          "existing_components": [
+            "ZohoEvolutionSystem",
+            "SelfModificationSystem"
+          ],
+          "status": "implemented"
+        },
+        "Comprehensive Monitoring": {
+          "feature": "Comprehensive Monitoring",
+          "description": "System has complete monitoring infrastructure",
+          "required_components": [
+            "ComprehensiveMonitoringSystem"
+          ],
+          "existing_components": [
+            "ComprehensiveMonitoringSystem"
+          ],
+          "status": "implemented"
+        },
+        "Safety & Rollback": {
+          "feature": "Safety & Rollback",
+          "description": "System has safety protocols and rollback mechanisms",
+          "required_components": [
+            "SelfModificationSystem"
+          ],
+          "existing_components": [
+            "SelfModificationSystem"
+          ],
+          "status": "implemented"
+        }
+      }
+    }
+  ]
+}

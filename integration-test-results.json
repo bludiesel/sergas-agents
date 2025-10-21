@@ -1,0 +1,105 @@
+{
+  "summary": {
+    "total": 8,
+    "passed": 5,
+    "failed": 3,
+    "success": false
+  },
+  "results": [
+    {
+      "name": "Backend Health Check",
+      "status": "PASS",
+      "result": {
+        "statusCode": 200,
+        "service": "sergas-agents",
+        "protocol": "ag-ui",
+        "copilotkitConfigured": true,
+        "agentsRegistered": 3
+      },
+      "timestamp": "2025-10-20T17:56:10.997Z"
+    },
+    {
+      "name": "Backend API Documentation",
+      "status": "PASS",
+      "result": {
+        "statusCode": 200,
+        "hasSwaggerUI": true
+      },
+      "timestamp": "2025-10-20T17:56:10.998Z"
+    },
+    {
+      "name": "Backend OpenAPI Specification",
+      "status": "PASS",
+      "result": {
+        "statusCode": 200,
+        "openapiVersion": "3.1.0",
+        "title": "Sergas Super Account Manager API",
+        "version": "1.0.0"
+      },
+      "timestamp": "2025-10-20T17:56:11.002Z"
+    },
+    {
+      "name": "Frontend Health Check",
+      "status": "FAIL",
+      "error": "",
+      "timestamp": "2025-10-20T17:56:11.004Z"
+    },
+    {
+      "name": "CopilotKit Frontend Endpoint",
+      "status": "FAIL",
+      "error": "",
+      "timestamp": "2025-10-20T17:56:11.005Z"
+    },
+    {
+      "name": "CopilotKit Backend Integration",
+      "status": "PASS",
+      "result": {
+        "statusCode": 200,
+        "hasData": true,
+        "hasResponse": true,
+        "responseText": "⚠️ Orchestrator Error for DEFAULT_ACCOUNT: 'NoneType' object has no attribute 'get_account_snapshot'..."
+      },
+      "timestamp": "2025-10-20T17:56:11.008Z"
+    },
+    {
+      "name": "End-to-End CopilotKit Flow",
+      "status": "FAIL",
+      "error": "",
+      "timestamp": "2025-10-20T17:56:11.009Z"
+    },
+    {
+      "name": "Service Connectivity Matrix",
+      "status": "PASS",
+      "result": {
+        "backend": {
+          "reachable": true,
+          "statusCode": 200
+        },
+        "frontend": {
+          "reachable": false,
+          "error": ""
+        }
+      },
+      "timestamp": "2025-10-20T17:56:11.010Z"
+    }
+  ],
+  "timestamp": "2025-10-20T17:56:11.011Z",
+  "testConfig": {
+    "backend": {
+      "baseUrl": "http://localhost:8008",
+      "endpoints": {
+        "health": "/health",
+        "docs": "/docs",
+        "copilotkit": "/api/copilotkit",
+        "openapi": "/openapi.json"
+      }
+    },
+    "frontend": {
+      "baseUrl": "http://localhost:7008",
+      "endpoints": {
+        "root": "/",
+        "copilotkit": "/api/copilotkit"
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "timestamp": "2025-10-21T08:36:13.695543",
+  "overall_status": "HEALTHY",
+  "components": {
+    "Dynamic Workflow Engine": {
+      "file": "src/agents/dynamic_workflow_engine.py",
+      "description": "Adaptive multi-agent workflow orchestration",
+      "status": "healthy",
+      "metrics": {
+        "last_modified": "2025-10-20 23:49:29",
+        "size_kb": 48.9,
+        "file_exists": true,
+        "lines": 1450,
+        "readable": true
+      }
+    },
+    "Enhanced GLM Integration": {
+      "file": "src/agents/enhanced_glm_integration.py",
+      "description": "Intelligent GLM-4.6 model selection and routing",
+      "status": "healthy",
+      "metrics": {
+        "last_modified": "2025-10-20 23:49:27",
+        "size_kb": 40.7,
+        "file_exists": true,
+        "lines": 1172,
+        "readable": true
+      }
+    },
+    "Self Modification System": {
+      "file": "src/agents/self_modification_system.py",
+      "description": "Safe agent modification with version control",
+      "status": "healthy",
+      "metrics": {
+        "last_modified": "2025-10-20 23:48:59",
+        "size_kb": 69.2,
+        "file_exists": true,
+        "lines": 1702,
+        "readable": true
+      }
+    },
+    "Zoho Evolution System": {
+      "file": "src/agents/zoho_evolution_system.py",
+      "description": "Continuous learning and agent evolution",
+      "status": "healthy",
+      "metrics": {
+        "last_modified": "2025-10-20 23:49:58",
+        "size_kb": 72.2,
+        "file_exists": true,
+        "lines": 2011,
+        "readable": true
+      }
+    },
+    "Comprehensive Monitoring": {
+      "file": "src/monitoring/comprehensive_monitoring.py",
+      "description": "Complete testing and monitoring infrastructure",
+      "status": "healthy",
+      "metrics": {
+        "last_modified": "2025-10-20 23:48:39",
+        "size_kb": 78.4,
+        "file_exists": true,
+        "lines": 2212,
+        "readable": true
+      }
+    }
+  },
+  "dependencies": {
+    "Python Core": {
+      "available": 5,
+      "total": 5,
+      "missing": [],
+      "status": "healthy"
+    },
+    "Optional": {
+      "available": 0,
+      "total": 7,
+      "missing": [
+        "structlog",
+        "prometheus_client",
+        "psutil",
+        "numpy",
+        "sklearn",
+        "httpx",
+        "tenacity"
+      ],
+      "status": "warning"
+    }
+  },
+  "summary": {
+    "total": 5,
+    "healthy": 5,
+    "warning": 0,
+    "error": 0
+  }
+}
