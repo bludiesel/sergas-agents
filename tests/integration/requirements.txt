@@ -1,0 +1,75 @@
+# Integration Test Requirements
+
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-xdist>=3.3.1
+
+# Async support
+asyncio>=3.4.3
+aiohttp>=3.8.5
+aiofiles>=23.2.1
+
+# Mock and testing utilities
+responses>=0.23.3
+freezegun>=1.2.2
+factory-boy>=3.3.0
+faker>=19.3.0
+
+# Performance and monitoring
+psutil>=5.9.5
+memory-profiler>=0.61.0
+py-spy>=0.3.14
+
+# Data validation and serialization
+pydantic>=2.3.0
+marshmallow>=3.20.1
+jsonschema>=4.19.0
+
+# Utilities for testing
+tenacity>=8.2.3
+python-dotenv>=1.0.0
+click>=8.1.7
+rich>=13.5.2
+
+# Reporting
+pytest-html>=4.1.1
+pytest-json-report>=1.5.0
+allure-pytest>=2.13.2
+
+# Environment and configuration
+python-decouple>=3.8
+environs>=9.5.0
+
+# HTTP and API testing
+httpx>=0.24.1
+requests>=2.31.0
+requests-mock>=1.11.0
+
+# Database testing (if needed)
+sqlalchemy>=2.0.20
+alembic>=1.12.0
+
+# Time and date handling
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# File handling
+pathlib2>=2.3.7
+watchdog>=3.0.0
+
+# Logging and debugging
+structlog>=23.1.0
+loguru>=0.7.2
+
+# Type checking and linting
+mypy>=1.5.1
+black>=23.7.0
+flake8>=6.0.0
+isort>=5.12.0
+
+# Security testing
+bandit>=1.7.5
+safety>=2.3.5
