@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLM-4.6 Manual Test Interface</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover { background-color: #0056b3; }
+        .test-button:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+        .response-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 16px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .instructions {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+            font-weight: 500;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 GLM-4.6 Integration Test Suite</h1>
+
+    <div class="container">
+        <h2>System Status</h2>
+        <div id="systemStatus">
+            <div class="status info">Checking system components...</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="frontendStatus">❓</div>
+                <div class="metric-label">Frontend (Port 7007)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="backendStatus">❓</div>
+                <div class="metric-label">Backend (Port 8008)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="copilotKitStatus">❓</div>
+                <div class="metric-label">CopilotKit</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="glm4Status">❓</div>
+                <div class="metric-label">GLM-4.6 Model</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-container">
+        <button class="tab active" onclick="showTab('ui-test')">UI Testing</button>
+        <button class="tab" onclick="showTab('api-test')">API Testing</button>
+        <button class="tab" onclick="showTab('manual-test')">Manual Testing</button>
+        <button class="tab" onclick="showTab('results')">Results & Analysis</button>
+    </div>
+
+    <div id="ui-test" class="tab-content active">
+        <div class="container">
+            <h2>UI Component Testing</h2>
+            <div class="instructions">
+                <strong>Instructions:</strong> The embedded UI below is the actual Sergas Account Manager.
+                Use it to test the complete workflow:
+                <ol>
+                    <li>Open the chat sidebar on the right</li>
+                    <li>Send messages to test GLM-4.6 responses</li>
+                    <li>Test account analysis functionality</li>
+                    <li>Verify model identification and response quality</li>
+                </ol>
+            </div>
+            <iframe src="http://localhost:7007" id="uiFrame"></iframe>
+        </div>
+    </div>
+
+    <div id="api-test" class="tab-content">
+        <div class="container">
+            <h2>Direct API Testing</h2>
+
+            <button class="test-button" onclick="testBackendHealth()">Test Backend Health</button>
+            <button class="test-button" onclick="testCopilotKitEndpoint()">Test CopilotKit Endpoint</button>
+            <button class="test-button" onclick="testAgentEndpoint()">Test Agent Endpoint</button>
+            <button class="test-button" onclick="testModelDirectly()">Test GLM-4.6 Directly</button>
+
+            <div id="apiResponse" class="response-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div id="manual-test" class="tab-content">
+        <div class="container">
+            <h2>Manual Test Scenarios</h2>
+
+            <div class="instructions">
+                <strong>Test these scenarios in the UI above:</strong>
+            </div>
+
+            <div class="container" style="background-color: #f8f9fa;">
+                <h3>Scenario 1: Model Identification</h3>
+                <p><strong>Query:</strong> "What model are you? Please specify your exact model name and version."</p>
+                <p><strong>Expected:</strong> Response should mention GLM-4.6 or Zhipu AI</p>
+                <button class="test-button" onclick="copyToClipboard('What model are you? Please specify your exact model name and version.')">Copy Query</button>
+            </div>
+
+            <div class="container" style="background-color: #f8f9fa;">
+                <h3>Scenario 2: Account Analysis</h3>
+                <p><strong>Query:</strong> "Please analyze account ACC-123456 and provide risk assessment and recommendations."</p>
+                <p><strong>Expected:</strong> Detailed analysis with risk signals and actionable recommendations</p>
+                <button class="test-button" onclick="copyToClipboard('Please analyze account ACC-123456 and provide risk assessment and recommendations.')">Copy Query</button>
+            </div>
+
+            <div class="container" style="background-color: #f8f9fa;">
+                <h3>Scenario 3: Professional Capabilities</h3>
+                <p><strong>Query:</strong> "What are the key risk indicators for account management and how do you prioritize recommendations?"</p>
+                <p><strong>Expected:</strong> Professional response about account management best practices</p>
+                <button class="test-button" onclick="copyToClipboard('What are the key risk indicators for account management and how do you prioritize recommendations?')">Copy Query</button>
+            </div>
+
+            <div class="container" style="background-color: #f8f9fa;">
+                <h3>Scenario 4: Error Handling</h3>
+                <p><strong>Query:</strong> "Analyze account INVALID-ID-999" (invalid account)</p>
+                <p><strong>Expected:</strong> Graceful error handling with helpful guidance</p>
+                <button class="test-button" onclick="copyToClipboard('Analyze account INVALID-ID-999')">Copy Query</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="results" class="tab-content">
+        <div class="container">
+            <h2>Test Results & Analysis</h2>
+
+            <div class="container" style="background-color: #e7f3ff;">
+                <h3>✅ Expected Working Features</h3>
+                <ul>
+                    <li>UI loads successfully with CopilotKit sidebar</li>
+                    <li>Chat interface accepts and processes messages</li>
+                    <li>GLM-4.6 backend responds to queries</li>
+                    <li>Account analysis actions are defined</li>
+                    <li>Model provides professional responses</li>
+                </ul>
+            </div>
+
+            <div class="container" style="background-color: #fff3cd;">
+                <h3>⚠️ Known Limitations</h3>
+                <ul>
+                    <li>Backend agent endpoints may return 404 (still being implemented)</li>
+                    <li>Account data requires actual Zoho CRM integration</li>
+                    <li>Some advanced features may be placeholder implementations</li>
+                </ul>
+            </div>
+
+            <div id="testResults" class="response-box">
+                Test results will appear here as you run tests...
+            </div>
+
+            <button class="test-button" onclick="generateReport()">Generate Test Report</button>
+            <button class="test-button" onclick="clearResults()">Clear Results</button>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        // Initialize on page load
+        window.onload = function() {
+            checkSystemStatus();
+            setInterval(checkSystemStatus, 30000); // Check every 30 seconds
+        };
+
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active from all tab buttons
+            const buttons = document.querySelectorAll('.tab');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function checkSystemStatus() {
+            const statusDiv = document.getElementById('systemStatus');
+
+            // Check Frontend
+            try {
+                const frontendResponse = await fetch('http://localhost:7007');
+                document.getElementById('frontendStatus').textContent = '✅';
+                document.getElementById('frontendStatus').style.color = '#28a745';
+            } catch (error) {
+                document.getElementById('frontendStatus').textContent = '❌';
+                document.getElementById('frontendStatus').style.color = '#dc3545';
+            }
+
+            // Check Backend
+            try {
+                const backendResponse = await fetch('http://localhost:8008/health');
+                const backendData = await backendResponse.json();
+                document.getElementById('backendStatus').textContent = '✅';
+                document.getElementById('backendStatus').style.color = '#28a745';
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = '❌';
+                document.getElementById('backendStatus').style.color = '#dc3545';
+            }
+
+            // Check CopilotKit
+            try {
+                const copilotResponse = await fetch('http://localhost:7007/api/copilotkit?query=query%20%7B%20__typename%20%7D');
+                document.getElementById('copilotKitStatus').textContent = '✅';
+                document.getElementById('copilotKitStatus').style.color = '#28a745';
+            } catch (error) {
+                document.getElementById('copilotKitStatus').textContent = '❌';
+                document.getElementById('copilotKitStatus').style.color = '#dc3545';
+            }
+
+            // Check GLM-4.6 through agents endpoint
+            try {
+                const agentsResponse = await fetch('http://localhost:8008/agents');
+                const agentsData = await agentsResponse.json();
+                if (agentsData.model === 'glm-4.6') {
+                    document.getElementById('glm4Status').textContent = '✅';
+                    document.getElementById('glm4Status').style.color = '#28a745';
+                } else {
+                    document.getElementById('glm4Status').textContent = '⚠️';
+                    document.getElementById('glm4Status').style.color = '#ffc107';
+                }
+            } catch (error) {
+                document.getElementById('glm4Status').textContent = '❌';
+                document.getElementById('glm4Status').style.color = '#dc3545';
+            }
+
+            updateStatusMessage();
+        }
+
+        function updateStatusMessage() {
+            const statusDiv = document.getElementById('systemStatus');
+            const statuses = [
+                document.getElementById('frontendStatus').textContent,
+                document.getElementById('backendStatus').textContent,
+                document.getElementById('copilotKitStatus').textContent,
+                document.getElementById('glm4Status').textContent
+            ];
+
+            const workingCount = statuses.filter(s => s === '✅').length;
+            const totalCount = statuses.length;
+
+            let message, className;
+            if (workingCount === totalCount) {
+                message = `🎉 All systems operational! (${workingCount}/${totalCount})`;
+                className = 'success';
+            } else if (workingCount >= totalCount / 2) {
+                message = `⚠️ Partial system functionality (${workingCount}/${totalCount})`;
+                className = 'warning';
+            } else {
+                message = `❌ System issues detected (${workingCount}/${totalCount})`;
+                className = 'error';
+            }
+
+            statusDiv.innerHTML = `<div class="status ${className}">${message}</div>`;
+        }
+
+        async function testBackendHealth() {
+            showApiLoader();
+            try {
+                const response = await fetch('http://localhost:8008/health');
+                const data = await response.json();
+                showApiResponse('Backend Health Check:', JSON.stringify(data, null, 2));
+                addTestResult('Backend Health', response.ok, 'success');
+            } catch (error) {
+                showApiResponse('Backend Health Error:', error.message);
+                addTestResult('Backend Health', false, error.message);
+            }
+        }
+
+        async function testCopilotKitEndpoint() {
+            showApiLoader();
+            try {
+                const response = await fetch('http://localhost:7007/api/copilotkit?query=query%20%7B%20__typename%20%7D');
+                const data = await response.json();
+                showApiResponse('CopilotKit Endpoint:', JSON.stringify(data, null, 2));
+                addTestResult('CopilotKit Endpoint', response.ok, 'success');
+            } catch (error) {
+                showApiResponse('CopilotKit Error:', error.message);
+                addTestResult('CopilotKit Endpoint', false, error.message);
+            }
+        }
+
+        async function testAgentEndpoint() {
+            showApiLoader();
+            try {
+                const response = await fetch('http://localhost:8008/agents');
+                const data = await response.json();
+                showApiResponse('Agent Endpoint:', JSON.stringify(data, null, 2));
+                addTestResult('Agent Endpoint', response.ok, 'success');
+            } catch (error) {
+                showApiResponse('Agent Endpoint Error:', error.message);
+                addTestResult('Agent Endpoint', false, error.message);
+            }
+        }
+
+        async function testModelDirectly() {
+            showApiLoader();
+            try {
+                // This would need actual implementation based on the backend API
+                showApiResponse('Model Test:', 'Direct model testing requires specific API endpoint. Use the UI chat interface instead.');
+                addTestResult('Direct Model Test', 'partial', 'Use UI chat interface');
+            } catch (error) {
+                showApiResponse('Model Test Error:', error.message);
+                addTestResult('Direct Model Test', false, error.message);
+            }
+        }
+
+        function showApiResponse(title, content) {
+            const responseDiv = document.getElementById('apiResponse');
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `<strong>${title}</strong>\n\n${content}`;
+        }
+
+        function showApiLoader() {
+            const responseDiv = document.getElementById('apiResponse');
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = '⏳ Testing...';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Query copied to clipboard! Paste it in the UI chat above.');
+            });
+        }
+
+        function addTestResult(testName, passed, details) {
+            testResults.push({
+                test: testName,
+                passed: passed,
+                details: details,
+                timestamp: new Date().toISOString()
+            });
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            const passedCount = testResults.filter(r => r.passed === true).length;
+            const totalCount = testResults.length;
+
+            let html = `Test Summary: ${passedCount}/${totalCount} passed\n\n`;
+            html += 'Detailed Results:\n';
+
+            testResults.forEach(result => {
+                const status = result.passed === true ? '✅' : result.passed === 'partial' ? '⚠️' : '❌';
+                html += `${status} ${result.test}: ${result.details}\n`;
+            });
+
+            resultsDiv.textContent = html;
+        }
+
+        function generateReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    totalTests: testResults.length,
+                    passedTests: testResults.filter(r => r.passed === true).length,
+                    partialTests: testResults.filter(r => r.passed === 'partial').length,
+                    failedTests: testResults.filter(r => r.passed === false).length
+                },
+                results: testResults
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `glm-test-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearResults() {
+            testResults = [];
+            updateTestResults();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-container {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .assistant {
+            background: #f3e5f5;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CopilotKit API Test</h1>
+    <div id="status"></div>
+
+    <div class="chat-container" id="chat">
+        <div class="message assistant">Hello! I'm ready to help you test the chat functionality.</div>
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="messageInput" placeholder="Type your message here..." value="Hello">
+        <button onclick="sendMessage()" id="sendBtn">Send</button>
+    </div>
+
+    <div id="response"></div>
+
+    <script>
+        let chatContainer = document.getElementById('chat');
+        let statusDiv = document.getElementById('status');
+        let responseDiv = document.getElementById('response');
+        let messageInput = document.getElementById('messageInput');
+        let sendBtn = document.getElementById('sendBtn');
+
+        // Test API connection on load
+        window.onload = async function() {
+            try {
+                const response = await fetch('/api/copilotkit');
+                const data = await response.json();
+                statusDiv.innerHTML = `<div class="success">✅ API Connected: ${data.message}</div>`;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ API Connection Failed: ${error.message}</div>`;
+            }
+        };
+
+        function addMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Disable button and add user message
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            addMessage('user', message);
+            responseDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/copilotkit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'generateCopilotResponse',
+                        messages: [
+                            { role: 'user', content: message }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.data?.generateCopilotResponse?.response) {
+                    const agentResponse = data.data.generateCopilotResponse.response;
+                    addMessage('assistant', agentResponse);
+                    responseDiv.innerHTML = `<div class="success">✅ Response received from ${data.data.generateCopilotResponse.agent || 'agent'}</div>`;
+                } else if (data.errors) {
+                    addMessage('assistant', `Error: ${data.errors[0].message}`);
+                    responseDiv.innerHTML = `<div class="error">❌ ${data.errors[0].message}</div>`;
+                } else {
+                    addMessage('assistant', 'Received response but no message content');
+                    responseDiv.innerHTML = `<div class="error">⚠️ Unexpected response format</div>`;
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('assistant', `Connection error: ${error.message}`);
+                responseDiv.innerHTML = `<div class="error">❌ Connection Error: ${error.message}</div>`;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+                messageInput.value = '';
+            }
+        }
+
+        // Allow Enter key to send message
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
