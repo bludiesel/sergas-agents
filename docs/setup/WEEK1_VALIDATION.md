@@ -1,7 +1,7 @@
 # Week 1 Validation Report
 
-**Generated**: 2025-10-19 20:37:28
-**Duration**: 0.12 seconds
+**Generated**: 2025-10-20 23:15:43
+**Duration**: 0.10 seconds
 
 ---
 
@@ -11,10 +11,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 18 |
-| Passed | 17 |
-| Failed | 1 |
-| Pass Rate | 94.4% |
+| Total Tests | 31 |
+| Passed | 18 |
+| Failed | 13 |
+| Pass Rate | 58.1% |
 
 ## Validation Checklist
 
@@ -64,7 +64,7 @@
 
 ### ⚠️ Issues to Address
 
-1 test(s) failed. Review detailed output:
+13 test(s) failed. Review detailed output:
 ```bash
 pytest tests/ -v --tb=short
 ```
